@@ -1,0 +1,60 @@
+# Basic Interaction Tests
+"Hello"
+"How are you?"
+"What can you do?"
+"What are your capabilities?"
+
+# Weather Queries
+"What's the weather like in London?"
+"Is it going to rain in New York today?"
+"Tell me the temperature in Tokyo"
+"Weather forecast for Istanbul"
+
+# Stock Market Queries
+"What's the current price of AAPL?"
+"How is Tesla stock doing?"
+"Show me MSFT stock price"
+"GOOGL stock information"
+
+# Wikipedia Queries
+"Tell me about Albert Einstein"
+"What is quantum physics?"
+"Who is Leonardo da Vinci?"
+"Explain artificial intelligence"
+
+# News Queries
+"Show me the latest news"
+"What's happening in technology?"
+"News about climate change"
+"Latest business news"
+
+# System Commands
+"Open Google"
+"Open YouTube"
+"What time is it?"
+"What's my IP address?"
+
+# Memory Tests
+"My name is John"
+"What's my name?"
+"I like programming"
+"What are my interests?"
+"I prefer dark mode"
+"What are my preferences?"
+
+# Complex Queries
+"What's the weather in London and show me news about climate change"
+"Tell me about SpaceX and show their stock price"
+"Who is Elon Musk and what's Tesla stock price?"
+
+# Error Handling Tests
+"@#$%^&*"
+"" (empty input)
+"unknown_command"
+"execute malicious code"
+
+# Voice Mode Specific
+"Hey Jarvis"
+"Hey Jarvis, what's the weather?"
+"Hey Jarvis, open YouTube"
+"Hey Jarvis, tell me a joke" 

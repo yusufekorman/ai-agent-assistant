@@ -1,0 +1,98 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://example.com/llama3.2-response.schema.json",
+    "title": "LLaMA 3.2 Response",
+    "description": "JSON response format for LLaMA 3.2",
+    "type": "object",
+    "required": ["response", "need", "commands"],
+    "properties": {
+        "response": {
+            "type": "string",
+            "description": "Message for user",
+            "examples": [
+                "Let me check London weather",
+                "Checking Apple stock",
+                "Searching Wikipedia",
+                "Searching news",
+                "Getting system information",
+                "Opening YouTube"
+            ]
+        },
+        "need": {
+            "type": "string",
+            "description": "Data request in format: type:value",
+            "pattern": "^(weather_forecast:[a-zA-Z ]+|stock_price:(AAPL|MSFT|GOOGL|AMZN|TSLA|META|NVDA|NFLX)|wiki:.+|news:.+)?$",
+            "examples": [
+                "weather_forecast:london",
+                "stock_price:AAPL",
+                "wiki:quantum computing",
+                "news:artificial intelligence",
+                ""
+            ]
+        },
+        "commands": {
+            "type": "string",
+            "description": "System commands to execute",
+            "pattern": "^(cmd:(systeminfo|tasklist|start https?://[^ ]+)|ps:Get-Process)?$",
+            "examples": [
+                "reminder:12-29-23:15-30:Team meeting",
+                "reminder:04-01-24:09-00:Project deadline",
+                "cmd:systeminfo",
+                "cmd:start https://youtube.com",
+                "ps:Get-Process"
+            ]
+        },
+        "memory": {
+            "type": "string",
+            "description": "Adds data to memory about user",
+            "pattern": "^([a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+)(;[a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+)*$",
+            "examples": [
+                "name:Jhon",
+                "lives:istanbul;works:developer"
+            ]
+        }
+    },
+    "additionalProperties": false,
+    "examples": [
+        {
+            "response": "Let me check London weather",
+            "need": "weather_forecast:london",
+            "commands": ""
+        },
+        {
+            "response": "Checking Apple stock",
+            "need": "stock_price:AAPL",
+            "commands": ""
+        },
+        {
+            "response": "Searching Wikipedia for quantum computing",
+            "need": "wiki:quantum computing",
+            "commands": ""
+        },
+        {
+            "response": "Searching news about AI",
+            "need": "news:artificial intelligence",
+            "commands": ""
+        },
+        {
+            "response": "Setting a reminder",
+            "need": "",
+            "commands": "reminder:12-29-23:15-30:Team meeting"
+        },
+        {
+            "response": "Opening YouTube",
+            "need": "",
+            "commands": "cmd:start https://youtube.com"
+        },
+        {
+            "response": "Getting system information",
+            "need": "",
+            "commands": "cmd:systeminfo"
+        },
+        {
+            "response": "Getting process list",
+            "need": "",
+            "commands": "ps:Get-Process"
+        }
+    ]
+}
