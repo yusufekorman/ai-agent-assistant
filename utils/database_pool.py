@@ -1,6 +1,5 @@
 import sqlite3
 import asyncio
-from typing import Optional
 
 class DatabasePool:
     def __init__(self, db_path: str = "database.db"):

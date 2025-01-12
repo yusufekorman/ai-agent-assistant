@@ -1,7 +1,6 @@
 import aiohttp
 import time
 from datetime import datetime
-import json
 
 days = [
     "Monday",

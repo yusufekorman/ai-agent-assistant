@@ -1,7 +1,5 @@
 from typing import Dict, List, Optional, Any
-import sqlite3
 from utils.database_pool import DatabasePool
-import asyncio
 from sentence_transformers import SentenceTransformer
 from scipy.spatial.distance import cosine
 
