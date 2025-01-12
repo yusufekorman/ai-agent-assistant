@@ -40,8 +40,8 @@ kabul etmiş olursunuz.
 
 1. Depoyu klonlayın:
 ```bash
-git clone https://github.com/yusufekorman/ai-assistant.git
-cd ai-assistant
+git clone https://github.com/yusufekorman/ai-agent-assistant.git
+cd ai-agent-assistant
 ```
 
 2. Sanal ortam oluşturun ve etkinleştirin:
