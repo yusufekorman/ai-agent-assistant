@@ -42,7 +42,7 @@ This software is provided "as is", without warranty of any kind. By using this s
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/ai-assistant.git
+git clone https://github.com/yusufekorman/ai-assistant.git
 cd ai-assistant
 ```
 
