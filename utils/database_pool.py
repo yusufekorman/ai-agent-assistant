@@ -1,6 +1,8 @@
 import sqlite3
 import asyncio
 
+#TODO: Do not using now
+
 class DatabasePool:
     def __init__(self, db_path: str = "database.db"):
         self.db_path = db_path
@@ -15,25 +17,7 @@ class DatabasePool:
     async def _initialize_tables(self, conn: sqlite3.Connection):
         cursor = conn.cursor()
         
-        # Memory table
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS user_memory (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            key TEXT NOT NULL,
-            value TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )""")
-        
-        # Memory table indexes
-        cursor.execute("""
-        CREATE INDEX IF NOT EXISTS idx_memory_key 
-        ON user_memory(key)
-        """)
-        
-        cursor.execute("""
-        CREATE INDEX IF NOT EXISTS idx_memory_created 
-        ON user_memory(created_at)
-        """)
+        #TODO: Add dynimic table creation
         
         conn.commit()
     

@@ -4,7 +4,7 @@ import webbrowser
 import aiohttp
 from typing import Dict, Any, Optional
 
-async def execute_response(response_text: str, user_input: str, memory_manager, context: Dict[str, Any]) -> str:
+async def execute_response(response_text: str, user_input: str, context: Dict[str, Any]) -> str:
     """Execute the AI response and return the final response text"""
     try:
         response_data = json.loads(response_text)
@@ -13,11 +13,6 @@ async def execute_response(response_text: str, user_input: str, memory_manager, 
         response = response_data.get("response", "")
         need = response_data.get("need", "")
         commands = response_data.get("commands", "")
-        memory = response_data.get("memory", "")
-        
-        # Handle memory storage
-        if memory:
-            await memory_manager.save_memory(memory)
         
         # Handle data requests
         if need:

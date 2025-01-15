@@ -8,14 +8,12 @@ from voice_auth import VoiceAuthenticator
 import aiohttp
 
 from utils.database_pool import DatabasePool
-from utils.vector_memory_manager import SimpleVectorMemory
 from utils.execute_response import execute_response
 from utils.query import query_lm_studio
 
 # Initialize components
 voice_auth = VoiceAuthenticator()
 db_pool = DatabasePool()
-memory_manager = SimpleVectorMemory()
 
 # Initialize text-to-speech
 engine = pyttsx3.init()
@@ -129,14 +127,13 @@ async def main():
                 # Process input and get AI response
                 ai_response = await query_lm_studio(
                     prompt=user_input,
-                    memory_manager=memory_manager,
                     system_ip=system_ip or "unknown",
                 )
                 
                 # Handle AI response
                 if ai_response and "choices" in ai_response:
                     ai_response = ai_response["choices"][0]["message"]["content"].replace("\n", "")
-                    response = await execute_response(ai_response, user_input, memory_manager, {
+                    response = await execute_response(ai_response, user_input, {
                         "secrets": secrets,
                         "system_ip": system_ip or "unknown",
                     })
