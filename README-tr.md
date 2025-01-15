@@ -17,7 +17,6 @@ kabul etmiş olursunuz.
 
 - Metin ve ses etkileşim modları
 - Uyanma kelimesi algılama ("Hey Jarvis")
-- SQLite veritabanı ile bellek yönetimi
 - Çeşitli API entegrasyonları:
   - Hava durumu bilgisi
   - Borsa fiyatları
@@ -77,11 +76,7 @@ python main.py
    - Ses modu (2): "Hey Jarvis" ile başlayan sesli komutları kullanın
 
 3. Kullanılabilir komutlar:
-   - Hava durumu: "[şehir] hava durumu nasıl?"
-   - Borsa: "[hisse sembolü] fiyatı nedir?"
-   - Wikipedia: "[konu] hakkında bilgi ver"
-   - Haberler: "[konu] ile ilgili haberleri göster"
-   - Sistem: Çeşitli sistem komutları ve URL açma
+   - ŞUANDA SADECE İNGİLİZCE KOMUTLAR DESTEKLENMEKTEDİR
 
 ## Proje Yapısı
 
@@ -89,7 +84,6 @@ python main.py
 - `voice_auth.py`: Ses doğrulama ve uyanma kelimesi algılama
 - `utils/`:
   - `database_pool.py`: SQLite veritabanı bağlantı yönetimi
-  - `vector_memory_manager.py`: Vektör benzerliği ile bellek yönetimi
   - `execute_response.py`: Yanıt yürütme ve API entegrasyonları
   - `query.py`: LLM sorgu işleme
 

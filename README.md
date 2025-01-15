@@ -19,7 +19,6 @@ This software is provided "as is", without warranty of any kind. By using this s
 
 - Text and voice interaction modes
 - Wake word detection ("Hey Jarvis")
-- Memory management with SQLite database
 - Integration with various APIs:
   - Weather information
   - Stock prices
@@ -91,7 +90,6 @@ python main.py
 - `voice_auth.py`: Voice authentication and wake word detection
 - `utils/`:
   - `database_pool.py`: SQLite database connection management
-  - `vector_memory_manager.py`: Memory management with vector similarity
   - `execute_response.py`: Response execution and API integrations
   - `query.py`: LLM query handling
 
