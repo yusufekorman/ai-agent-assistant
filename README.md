@@ -18,7 +18,7 @@ This software is provided "as is", without warranty of any kind. By using this s
 ## Features
 
 - Text and voice interaction modes
-- Wake word detection ("Hey Jarvis")
+- Wake word detection ("Jarvis")
 - Integration with various APIs:
   - Weather information
   - Stock prices
@@ -32,9 +32,8 @@ This software is provided "as is", without warranty of any kind. By using this s
 - Python 3.8+
 - PyTorch
 - transformers
-- SpeechRecognition
 - pyttsx3
-- sentence-transformers
+- RealtimeSTT ([GitHub](https://github.com/KoljaB/RealtimeSTT))
 - Other dependencies in requirements.txt
 
 ## Installation
@@ -75,7 +74,7 @@ python main.py
 
 2. Select input mode:
    - Text mode (1): Type your queries directly
-   - Voice mode (2): Use voice commands, starting with "Hey Jarvis"
+   - Voice mode (2): Use voice commands, starting with "Jarvis"
 
 3. Available commands:
    - Weather: "What's the weather in [city]?"

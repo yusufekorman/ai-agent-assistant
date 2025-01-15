@@ -16,7 +16,7 @@ kabul etmiş olursunuz.
 ## Özellikler
 
 - Metin ve ses etkileşim modları
-- Uyanma kelimesi algılama ("Hey Jarvis")
+- Uyanma kelimesi algılama ("Jarvis")
 - Çeşitli API entegrasyonları:
   - Hava durumu bilgisi
   - Borsa fiyatları
@@ -30,9 +30,8 @@ kabul etmiş olursunuz.
 - Python 3.8+
 - PyTorch
 - transformers
-- SpeechRecognition
 - pyttsx3
-- sentence-transformers
+- RealtimeSTT ([GitHub](https://github.com/KoljaB/RealtimeSTT))
 - Diğer bağımlılıklar requirements.txt içinde
 
 ## Kurulum
@@ -73,7 +72,7 @@ python main.py
 
 2. Giriş modunu seçin:
    - Metin modu (1): Sorgularınızı doğrudan yazın
-   - Ses modu (2): "Hey Jarvis" ile başlayan sesli komutları kullanın
+   - Ses modu (2): "Jarvis" ile başlayan sesli komutları kullanın
 
 3. Kullanılabilir komutlar:
    - ŞUANDA SADECE İNGİLİZCE KOMUTLAR DESTEKLENMEKTEDİR

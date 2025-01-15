@@ -41,15 +41,6 @@
                 "cmd:start https://youtube.com",
                 "ps:Get-Process"
             ]
-        },
-        "memory": {
-            "type": "string",
-            "description": "Adds data to memory about user",
-            "pattern": "^([a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+)(;[a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+)*$",
-            "examples": [
-                "name:Jhon",
-                "lives:istanbul;works:developer"
-            ]
         }
     },
     "additionalProperties": false,
