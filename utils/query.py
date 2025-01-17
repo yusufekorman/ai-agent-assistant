@@ -12,7 +12,7 @@ days = [
     "Sunday"
 ]
 
-async def query_lm_studio(prompt, prompt2=None, memory_manager=None, system_ip=""):
+async def query_lm_studio(prompt, prompt2=None, system_ip="", model='unsloth/llama-3.2-3b-instruct'):
     start_time = time.time()
     url = "http://localhost:6666/v1/chat/completions"
     headers = {"Content-Type": "application/json"}
@@ -27,25 +27,10 @@ async def query_lm_studio(prompt, prompt2=None, memory_manager=None, system_ip="
         }
     }
 
-    # Get memory context
-    memory_context = ""
-    if memory_manager:
-        results = await memory_manager.search(prompt)
-        best_outputs = []
-        for result in sorted(results, key=lambda x: x["similarity"], reverse=True)[:3]:
-            best_outputs.append(result)
-
-        for output in best_outputs:
-            memory_context += f"{output['text']}\n"
-
     # Format context
     context_prompt = f"""Current Context:
     Time: {context['timestamp']} ({context['day']})
-    System: 
-    IP: {context['system_info']['ip']}
-
-    Memory Context:
-    {memory_context}
+    System IP: {context['system_info']['ip']}
     """
 
     messages = [
@@ -57,7 +42,7 @@ async def query_lm_studio(prompt, prompt2=None, memory_manager=None, system_ip="
         messages.append({"role": "user", "content": prompt2})
 
     payload = {
-        "model": "unsloth/llama-3.2-3b-instruct",
+        "model": model,
         "messages": messages,
         "temperature": 0.7,
         "max_tokens": -1,

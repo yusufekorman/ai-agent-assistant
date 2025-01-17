@@ -1,9 +1,8 @@
-import json
-import speech_recognition as sr
 import pyttsx3
 from RealtimeSTT import AudioToTextRecorder
 import asyncio
 import aiohttp
+import yaml
 
 from utils.database_pool import DatabasePool
 from utils.execute_response import execute_response
@@ -21,8 +20,17 @@ engine.setProperty('voice', engine.getProperty('voices')[0].id)
 system_ip = None
 input_mode = 1  # Default to text input
 
-with open("secrets.json", "r") as file:
-    secrets = json.load(file)
+with open("config.yaml", "r") as file:
+    config = yaml.safe_load(file)
+
+    _secrets = config.get("secrets", {})
+    secrets = {key: value for secret in _secrets for key, value in secret.items()}
+
+    _config = config.get("config", {})
+    config = {key: value for secret in _config for key, value in secret.items()}
+
+    print("Config loaded")
+    print(f"Config: {config}")
 
 async def init_system():
     """Initialize system components"""
@@ -64,6 +72,7 @@ async def handleAI(user_input):
     ai_response = await query_lm_studio(
         prompt=user_input,
         system_ip=system_ip or "unknown",
+        model=config.get('llm_model', 'unsloth/llama-3.2-3b-instruct')
     )
     
     # Handle AI response
@@ -95,7 +104,7 @@ async def main():
                 await handleAI(input("You: ").strip())
             else:
                 print("Wait until it says 'say jarvis' before speaking.")
-                recorder = AudioToTextRecorder(wake_words="jarvis", language="en")
+                recorder = AudioToTextRecorder(model=config.get("whisper_model_type", "base"), wake_words=config.get("wake_words", ["jarvis"]), language="en")
                 await handleAI(recorder.text())
                     
     except Exception as e:

@@ -1,10 +1,6 @@
 # AI Assistant with Voice Interface
 
-A Python-based AI assistant that can interact through both text and voice, featuring memory management and various API integrations.
-
-## Turkish
-
-[Türkçe README](README-tr.md)
+A Python-based AI assistant that can interact through both text and voice and various API integrations.
 
 ## ⚠️ Disclaimer
 
@@ -21,7 +17,6 @@ This software is provided "as is", without warranty of any kind. By using this s
 - Wake word detection ("Jarvis")
 - Integration with various APIs:
   - Weather information
-  - Stock prices
   - Wikipedia summaries
   - News updates
 - System command execution capability
@@ -58,11 +53,14 @@ pip install -r requirements.txt
 ```
 
 4. Configure API keys:
-Create a `secrets.json` file with your API keys:
-```json
-{
-    "weather_api_key": "your_openweathermap_key"
-}
+Create a `config.yaml` file:
+```yaml
+config:
+  - llm_model: 'unsloth/llama-3.2-3b-instruct'
+  - whisper_model_type: 'base'
+  - wake_words: 'jarvis' # only RealtimeSTT supported
+secrets:
+  - weather_api_key: ''
 ```
 
 ## Usage
@@ -78,7 +76,6 @@ python main.py
 
 3. Available commands:
    - Weather: "What's the weather in [city]?"
-   - Stocks: "What's the price of [stock symbol]?"
    - Wikipedia: "Tell me about [topic]"
    - News: "Show me news about [topic]"
    - System: Various system commands and URL opening
@@ -86,11 +83,11 @@ python main.py
 ## Project Structure
 
 - `main.py`: Main application file
-- `voice_auth.py`: Voice authentication and wake word detection
 - `utils/`:
-  - `database_pool.py`: SQLite database connection management
+  - `database_pool.py`: SQLite database connection management (Do not use in production)
   - `execute_response.py`: Response execution and API integrations
   - `query.py`: LLM query handling
+  - `tool_utils.py`: Utility functions for tools
 
 ## Contributing
 

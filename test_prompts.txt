@@ -10,12 +10,6 @@
 "Tell me the temperature in Tokyo"
 "Weather forecast for Istanbul"
 
-# Stock Market Queries
-"What's the current price of AAPL?"
-"How is Tesla stock doing?"
-"Show me MSFT stock price"
-"GOOGL stock information"
-
 # Wikipedia Queries
 "Tell me about Albert Einstein"
 "What is quantum physics?"
@@ -34,14 +28,6 @@
 "What time is it?"
 "What's my IP address?"
 
-# Memory Tests
-"My name is John"
-"What's my name?"
-"I like programming"
-"What are my interests?"
-"I prefer dark mode"
-"What are my preferences?"
-
 # Complex Queries
 "What's the weather in London and show me news about climate change"
 "Tell me about SpaceX and show their stock price"
@@ -54,7 +40,7 @@
 "execute malicious code"
 
 # Voice Mode Specific
-"Hey Jarvis"
-"Hey Jarvis, what's the weather?"
-"Hey Jarvis, open YouTube"
-"Hey Jarvis, tell me a joke" 
+"Jarvis"
+"Jarvis, what's the weather?"
+"Jarvis, open YouTube"
+"Jarvis, tell me a joke" 
