@@ -4,11 +4,8 @@ import asyncio
 import aiohttp
 import yaml
 
-from utils.database_pool import DatabasePool
 from utils.execute_response import execute_response
 from utils.query import query_lm_studio
-
-db_pool = DatabasePool()
 
 # Initialize text-to-speech
 engine = pyttsx3.init()
@@ -42,13 +39,6 @@ async def init_system():
     except Exception as e:
         print(f"Error getting IP: {e}")
         system_ip = "unknown"
-    
-    # Initialize database
-    conn = await db_pool.get_connection()
-    try:
-        await db_pool._initialize_tables(conn)
-    finally:
-        await db_pool.release_connection(conn)
 
 def select_input_mode():
     """Select between text and voice input modes"""
