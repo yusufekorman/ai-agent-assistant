@@ -6,6 +6,7 @@ import yaml
 
 from utils.execute_response import execute_response
 from utils.query import query_lm_studio
+from utils.index import outputCleaner
 
 # Initialize text-to-speech
 engine = pyttsx3.init()
@@ -62,16 +63,19 @@ async def handleAI(user_input):
     ai_response = await query_lm_studio(
         prompt=user_input,
         system_ip=system_ip or "unknown",
-        model=config.get('llm_model', 'unsloth/llama-3.2-3b-instruct')
+        model=config.get('llm_model', 'llama-3.2-3b-instruct')
     )
-    
+
     # Handle AI response
     if ai_response and "choices" in ai_response:
-        ai_response = ai_response["choices"][0]["message"]["content"].replace("\n", "")
+        ai_response = ai_response["choices"][0]["message"]["content"]
+
+        ai_response = outputCleaner(ai_response)
+        
         response = await execute_response(ai_response, user_input, {
             "secrets": secrets,
             "system_ip": system_ip or "unknown",
-        })
+        }, model=config.get('llm_model', 'llama-3.2-3b-instruct'))
         say(response)
     else:
         print("AI did not respond or returned an invalid response.")

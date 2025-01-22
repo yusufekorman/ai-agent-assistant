@@ -12,7 +12,7 @@ days = [
     "Sunday"
 ]
 
-async def query_lm_studio(prompt, prompt2=None, system_ip="", model='unsloth/llama-3.2-3b-instruct'):
+async def query_lm_studio(prompt, answer=None, prompt2=None, system_ip="", model='unsloth/llama-3.2-3b-instruct'):
     start_time = time.time()
     url = "http://localhost:6666/v1/chat/completions"
     headers = {"Content-Type": "application/json"}
@@ -37,6 +37,9 @@ async def query_lm_studio(prompt, prompt2=None, system_ip="", model='unsloth/lla
         {"role": "user", "content": context_prompt},
         {"role": "user", "content": prompt}
     ]
+
+    if answer:
+        messages.append({"role": "assistant", "content": answer})
 
     if prompt2:
         messages.append({"role": "user", "content": prompt2})

@@ -3,6 +3,7 @@ import json
 import re
 import xml.etree.ElementTree as ET
 from typing import Optional
+import datetime
 
 async def search_wikipedia(query):
     try:
@@ -85,19 +86,41 @@ async def get_weather(city: str, api_key: Optional[str]) -> str:
         
     try:
         async with aiohttp.ClientSession() as session:
-            url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
+            url = f"http://api.openweathermap.org/data/2.5/forecast?q={city}&appid={api_key}&units=metric"
             async with session.get(url) as response:
                 if response.status == 200:
                     data = await response.json()
-                    temp = data["main"]["temp"]
-                    desc = data["weather"][0]["description"]
-                    return f"It's currently {temp}°C with {desc} in {city}"
+                    if data["list"]:
+                        weather_data = []
+                        for forecast in data["list"]:
+                            day_of_month = forecast["dt_txt"].split()[0].split("-")[2]
+                            month = forecast["dt_txt"].split()[0].split("-")[1]
+                            year = forecast["dt_txt"].split()[0].split("-")[0]
+                            date = f"{day_of_month}/{month}/{year}"
+
+                            hour = forecast["dt_txt"].split()[1].split(":")[0]
+                            minute = forecast["dt_txt"].split()[1].split(":")[1]
+                            time = f"{hour}:{minute}"
+                            
+                            # sadece bu günü ve yarını al
+                            today = datetime.datetime.now()
+                            today_in_month = today.day
+
+                            if str(day_of_month) == str(today_in_month) or str(day_of_month) == str(int(today_in_month) + 1):
+                                weather_data.append({
+                                    "datetime": f"{date} {time}",
+                                    "temperature": forecast["main"]["temp"],
+                                    "description": forecast["weather"][0]["description"]
+                                })
+                        return json.dumps(weather_data)
+                    else:
+                        return "No weather data found"
                 else:
                     return "Could not fetch weather data"
     except Exception as e:
         return f"Error getting weather data: {str(e)}"
 
-async def get_news(query: str, api_key: Optional[str]) -> str:
+async def get_news(query: str, api_key: Optional[str]):
     """Get news data"""
     if not api_key:
         return "News API key not configured"
@@ -108,19 +131,12 @@ async def get_news(query: str, api_key: Optional[str]) -> str:
             async with session.get(url) as response:
                 if response.status == 200:
                     data = await response.json()
-                    if data["articles"]:
-                        articles = data["articles"][:3]
-                        news_text = "Here are the latest news:\n"
-                        for i, article in enumerate(articles, 1):
-                            news_text += f"{i}. {article['title']}\n"
-                        return news_text
-                    else:
-                        return "No news found"
+                    
+                    return json.dumps(data.get("articles", []))
                 else:
                     return "Could not fetch news data"
     except Exception as e:
         return f"Error getting news data: {str(e)}"
-
 
 export = {
     'search_wikipedia': search_wikipedia,

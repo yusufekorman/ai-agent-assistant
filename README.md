@@ -61,6 +61,7 @@ config:
   - wake_words: 'jarvis' # only RealtimeSTT supported
 secrets:
   - weather_api_key: ''
+  - news_api_key: ''
 ```
 
 ## Usage
@@ -84,10 +85,10 @@ python main.py
 
 - `main.py`: Main application file
 - `utils/`:
-  - `database_pool.py`: SQLite database connection management (Do not use in production)
   - `execute_response.py`: Response execution and API integrations
   - `query.py`: LLM query handling
   - `tool_utils.py`: Utility functions for tools
+  - `index.py`: General utility functions
 
 ## Contributing
 
