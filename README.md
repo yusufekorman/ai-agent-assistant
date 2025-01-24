@@ -1,99 +1,166 @@
-# AI Assistant with Voice Interface
+# AI Assistant with Advanced Voice and Text Interface
 
-A Python-based AI assistant that can interact through both text and voice and various API integrations.
+An intelligent AI assistant built in Python that provides seamless interaction through both text and voice interfaces, powered by advanced language models and various API integrations.
 
-## ⚠️ Disclaimer
+## 🌟 Key Features
 
-This software is provided "as is", without warranty of any kind. By using this software, you acknowledge and agree that:
+- **Dual Interaction Modes**
+  - Text-based interface for precise input
+  - Voice interface with wake word detection ("Jarvis")
+  - Natural language processing capabilities
 
-- You are using it at your own risk
-- The authors are not responsible for any damage to your computer, data, or any other property
-- The authors are not liable for any misuse of the software or its commands
-- System commands should be used with caution as they can modify your system
+- **Advanced AI Integration**
+  - Powered by LLaMA 3.2B Instruct model
+  - Real-time speech-to-text using Whisper
+  - Context-aware responses
+  - Memory management for conversation history
 
-## Features
+- **API Integrations**
+  - Weather information retrieval
+  - Wikipedia knowledge access
+  - Real-time news updates
+  - Stock market data (via yfinance)
 
-- Text and voice interaction modes
-- Wake word detection ("Jarvis")
-- Integration with various APIs:
-  - Weather information
-  - Wikipedia summaries
-  - News updates
-- System command execution capability
-- URL opening functionality
+- **System Capabilities**
+  - System command execution
+  - URL handling and web browsing
+  - Text-to-speech output
+  - Configurable settings via YAML
 
-## Requirements
+## 🔧 Technical Requirements
 
-- Python 3.8+
-- PyTorch
-- transformers
-- pyttsx3
-- RealtimeSTT ([GitHub](https://github.com/KoljaB/RealtimeSTT))
-- Other dependencies in requirements.txt
+- Python 3.8 or higher
+- CUDA-compatible GPU (recommended for optimal performance)
+- Required Python packages:
+  - PyTorch (with CUDA support)
+  - transformers
+  - pyttsx3
+  - RealtimeSTT
+  - aiohttp
+  - Other dependencies listed in requirements.txt
 
-## Installation
+## 📦 Installation
 
-1. Clone the repository:
+1. **Clone the Repository**
 ```bash
 git clone https://github.com/yusufekorman/ai-agent-assistant.git
 cd ai-agent-assistant
 ```
 
-2. Create and activate virtual environment:
+2. **Set Up Virtual Environment**
 ```bash
 python -m venv .venv
-source .venv/bin/activate  # Linux/Mac
-# or
-.venv\Scripts\activate  # Windows
+# For Windows:
+.venv\Scripts\activate
+# For Linux/Mac:
+source .venv/bin/activate
 ```
 
-3. Install dependencies:
+3. **Install Dependencies**
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Configure API keys:
-Create a `config.yaml` file:
+4. **Configure the Application**
+Create a `config.yaml` file in the root directory:
 ```yaml
 config:
   - llm_model: 'unsloth/llama-3.2-3b-instruct'
   - whisper_model_type: 'base'
-  - wake_words: 'jarvis' # only RealtimeSTT supported
+  - wake_words: 'jarvis'
 secrets:
-  - weather_api_key: ''
-  - news_api_key: ''
+  - weather_api_key: 'your_weather_api_key'
+  - news_api_key: 'your_news_api_key'
 ```
 
-## Usage
+## 🚀 Usage
 
-1. Start the program:
+1. **Start the Application**
 ```bash
 python main.py
 ```
 
-2. Select input mode:
-   - Text mode (1): Type your queries directly
-   - Voice mode (2): Use voice commands, starting with "Jarvis"
+2. **Choose Input Mode**
+- Enter `1` for text input mode
+- Enter `2` for voice input mode with wake word "Jarvis"
 
-3. Available commands:
-   - Weather: "What's the weather in [city]?"
-   - Wikipedia: "Tell me about [topic]"
-   - News: "Show me news about [topic]"
-   - System: Various system commands and URL opening
+3. **Available Commands**
+- Weather queries: "What's the weather like in London?"
+- Knowledge queries: "Tell me about quantum computing"
+- News updates: "Show me the latest news about technology"
+- Stock information: "Get stock price for AAPL"
+- System commands: "Open Chrome" or "Create a new folder"
 
-## Project Structure
+## 🧪 Testing
 
-- `main.py`: Main application file
-- `utils/`:
-  - `execute_response.py`: Response execution and API integrations
-  - `query.py`: LLM query handling
-  - `tool_utils.py`: Utility functions for tools
-  - `index.py`: General utility functions
+The assistant comes with a comprehensive set of test prompts to verify functionality. Here are some basic examples you can try:
 
-## Contributing
+### Basic Tests
+```
+# Simple Interaction
+"Hello"
+"What can you do?"
+"Tell me a joke"
 
-Feel free to submit issues, fork the repository, and create pull requests for any improvements.
+# Weather Queries
+"What's the weather like in London?"
+"Weather forecast for Istanbul"
 
-## License
+# Knowledge Tests
+"Tell me about Albert Einstein"
+"Explain artificial intelligence"
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+# System Commands
+"What time is it?"
+"Open Calculator"
+```
+
+### Voice Mode Tests
+```
+"Jarvis"                      # Wake word
+"Jarvis, what's the weather?" # Weather query
+"Jarvis, tell me a joke"      # Entertainment
+"Jarvis, open YouTube"        # System command
+```
+
+For a complete set of test prompts covering all features including:
+- API Integration Tests
+- Memory and Context Tests
+- Complex Multi-Task Queries
+- Error Handling Tests
+- Stock Market Queries
+- Language Processing Tests
+- And more...
+
+Check out the [`test_prompts.md`](test_prompts.md) file in the project root directory for a comprehensive set of test examples with detailed explanations.
+
+## 📁 Project Structure
+
+```
+ai-agent-assistant/
+├── main.py              # Main application entry point
+├── config.yaml          # Configuration settings
+├── requirements.txt     # Python dependencies
+├── utils/
+│   ├── execute_response.py  # Response execution logic
+│   ├── query.py            # LLM query handling
+│   ├── tool_utils.py       # Utility functions
+│   ├── index.py           # Core utilities
+│   └── memory_manager.py  # Conversation memory management
+└── system_prompt.txt    # System prompt for AI model
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to:
+- Submit issues for bug reports or feature requests
+- Fork the repository
+- Create pull requests for improvements
+
+## ⚠️ Disclaimer
+
+This software is provided "as is", without warranty of any kind. Users should exercise caution when using system commands and ensure proper configuration of API keys and dependencies.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
