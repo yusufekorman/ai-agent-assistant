@@ -7,7 +7,7 @@ import utils.tool_utils as tool_utils
 from utils.query import query_lm_studio
 from utils.index import outputCleaner
 
-async def execute_response(response_text: str, user_input: str, context: Dict[str, Any], model='llama-3.2-3b-instruct'):
+async def execute_response(response_text: str, user_input: str, context: Dict[str, Any], model='llama-3.2-3b-instruct', config={}):
     """Execute the AI response and return the final response text"""
     try:
         response_data = json.loads(response_text)
@@ -47,6 +47,7 @@ async def execute_response(response_text: str, user_input: str, context: Dict[st
                     answer=response_text,
                     prompt2=need_response,
                     system_ip=context.get("system_ip", "unknown"),
+                    config=config,
                     model=model
                 )
 

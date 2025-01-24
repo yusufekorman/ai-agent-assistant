@@ -7,12 +7,16 @@ import yaml
 from utils.execute_response import execute_response
 from utils.query import query_lm_studio
 from utils.index import outputCleaner
+from utils.memory_manager import MemoryManager
 
 # Initialize text-to-speech
 engine = pyttsx3.init()
 engine.setProperty('rate', 150)
 engine.setProperty('volume', 1.0)
 engine.setProperty('voice', engine.getProperty('voices')[0].id)
+
+# Initialize memory manager
+memory_manager = MemoryManager()
 
 # Global variables
 system_ip = None
@@ -60,9 +64,14 @@ def say(text):
 
 async def handleAI(user_input):
     # Process input and get AI response
+    top5_memoryVectors = memory_manager.searchInMemoryVector(user_input)
+    memory_manager.addMemoryVector(user_input)
+
     ai_response = await query_lm_studio(
         prompt=user_input,
+        memory_vectors=top5_memoryVectors,
         system_ip=system_ip or "unknown",
+        config=config,
         model=config.get('llm_model', 'llama-3.2-3b-instruct')
     )
 
@@ -75,7 +84,7 @@ async def handleAI(user_input):
         response = await execute_response(ai_response, user_input, {
             "secrets": secrets,
             "system_ip": system_ip or "unknown",
-        }, model=config.get('llm_model', 'llama-3.2-3b-instruct'))
+        }, model=config.get('llm_model', 'llama-3.2-3b-instruct'), config=config)
         say(response)
     else:
         print("AI did not respond or returned an invalid response.")

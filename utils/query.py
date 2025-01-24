@@ -12,9 +12,9 @@ days = [
     "Sunday"
 ]
 
-async def query_lm_studio(prompt, answer=None, prompt2=None, system_ip="", model='unsloth/llama-3.2-3b-instruct'):
+async def query_lm_studio(prompt, answer=None, prompt2=None, system_ip="", model='unsloth/llama-3.2-3b-instruct', memory_vectors=[], config={}):
     start_time = time.time()
-    url = "http://localhost:6666/v1/chat/completions"
+    url = config["lm_studio_completions_url"]
     headers = {"Content-Type": "application/json"}
     dt = datetime.now()
 
@@ -32,6 +32,11 @@ async def query_lm_studio(prompt, answer=None, prompt2=None, system_ip="", model
     Time: {context['timestamp']} ({context['day']})
     System IP: {context['system_info']['ip']}
     """
+
+    if memory_vectors:
+        context_prompt += f"Memory Vector: \n"
+        for memoryVector in memory_vectors:
+            context_prompt += f"- {memoryVector}\n"
 
     messages = [
         {"role": "user", "content": context_prompt},
