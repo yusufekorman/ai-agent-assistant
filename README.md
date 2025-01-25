@@ -10,7 +10,7 @@ An intelligent AI assistant built in Python that provides seamless interaction t
   - Natural language processing capabilities
 
 - **Advanced AI Integration**
-  - Powered by LLaMA 3.2B Instruct model
+  - Powered by LLaMA 3.2B Instruct model (Optional, can be changable)
   - Real-time speech-to-text using Whisper
   - Context-aware responses
   - Memory management for conversation history
@@ -65,12 +65,13 @@ pip install -r requirements.txt
 Create a `config.yaml` file in the root directory:
 ```yaml
 config:
-  - llm_model: 'unsloth/llama-3.2-3b-instruct'
+  - lm_studio_completions_url: 'http://localhost:1234/v1/chat/completions'
+  - llm_model: 'llama-3.2-3b-instruct'
   - whisper_model_type: 'base'
-  - wake_words: 'jarvis'
+  - wake_words: ['jarvis']
 secrets:
-  - weather_api_key: 'your_weather_api_key'
-  - news_api_key: 'your_news_api_key'
+  - weather_api_key: 'your_openweathermap_api_key'
+  - news_api_key: 'your_newsapi_key'
 ```
 
 ## 🚀 Usage

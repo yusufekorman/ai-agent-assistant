@@ -91,7 +91,7 @@ async def handleAI(user_input):
 
 async def main():
     try:
-        global input_mode
+        global input_mode, memory_manager
         
         # Initialize system
         await init_system()
@@ -101,14 +101,21 @@ async def main():
         # Select input mode
         input_mode = select_input_mode()
         
-        # Get user input
+        # Clean program exit with Ctrl+C
         while True:
-            if input_mode == 1:
-                await handleAI(input("You: ").strip())
-            else:
-                print("Wait until it says 'say jarvis' before speaking.")
-                recorder = AudioToTextRecorder(model=config.get("whisper_model_type", "base"), wake_words=config.get("wake_words", ["jarvis"]), language="en")
-                await handleAI(recorder.text())
+            try:
+                if input_mode == 1:
+                    await handleAI(input("You: ").strip())
+                else:
+                    print("Wait until it says 'say jarvis' before speaking.")
+                    recorder = AudioToTextRecorder(model=config.get("whisper_model_type", "base"), 
+                                                wake_words=config.get("wake_words", ["jarvis"]), 
+                                                language="en")
+                    await handleAI(recorder.text())
+            except KeyboardInterrupt:
+                print("\nShutting down program...")
+                del memory_manager  # Call MemoryManager's __del__ method
+                break
                     
     except Exception as e:
         print(f"An error occurred while starting the program: {e}")
