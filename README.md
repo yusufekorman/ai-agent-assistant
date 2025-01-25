@@ -68,7 +68,7 @@ config:
   - lm_studio_completions_url: 'http://localhost:1234/v1/chat/completions'
   - llm_model: 'llama-3.2-3b-instruct'
   - whisper_model_type: 'base'
-  - wake_words: ['jarvis']
+  - wake_words: 'jarvis'
 secrets:
   - weather_api_key: 'your_openweathermap_api_key'
   - news_api_key: 'your_newsapi_key'
