@@ -5,7 +5,7 @@ import aiohttp
 import yaml
 
 from utils.execute_response import execute_response
-from utils.query import query_lm_studio
+from utils.query import query_llm
 from utils.index import outputCleaner
 from utils.memory_manager import MemoryManager
 
@@ -64,7 +64,7 @@ async def handleAI(user_input):
     top5_memoryVectors = memory_manager.searchInMemoryVector(user_input)
     memory_manager.addMemoryVector(user_input)
 
-    ai_response = await query_lm_studio(
+    ai_response = await query_llm(
         prompt=user_input,
         memory_vectors=top5_memoryVectors,
         system_ip=system_ip or "unknown",

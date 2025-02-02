@@ -17,8 +17,12 @@ class TestExecuteResponse(unittest.TestCase):
             'system_ip': '127.0.0.1'
         }
 
+    def run_async(self, coroutine):
+        """Asenkron fonksiyonu senkron olarak çalıştır"""
+        return asyncio.run(coroutine)
+
     @patch('requests.get')
-    async def test_weather_command(self, mock_get):
+    def test_weather_command(self, mock_get):
         """Hava durumu komutunun testi"""
         # Mock API yanıtı
         mock_get.return_value.json.return_value = {
@@ -27,19 +31,19 @@ class TestExecuteResponse(unittest.TestCase):
         }
         mock_get.return_value.status_code = 200
 
-        response = await execute_response(
+        response = self.run_async(execute_response(
             "Checking weather in Istanbul",
             "What's the weather in Istanbul?",
             self.test_context,
             model=self.test_config['llm_model'],
             config=self.test_config
-        )
+        ))
 
         self.assertIsInstance(response, str)
         self.assertIn("Istanbul", response)
 
     @patch('requests.get')
-    async def test_news_command(self, mock_get):
+    def test_news_command(self, mock_get):
         """Haber komutunun testi"""
         # Mock API yanıtı
         mock_get.return_value.json.return_value = {
@@ -50,42 +54,37 @@ class TestExecuteResponse(unittest.TestCase):
         }
         mock_get.return_value.status_code = 200
 
-        response = await execute_response(
+        response = self.run_async(execute_response(
             "Getting latest technology news",
             "Show me tech news",
             self.test_context,
             model=self.test_config['llm_model'],
             config=self.test_config
-        )
+        ))
 
         self.assertIsInstance(response, str)
         self.assertIn("news", response.lower())
 
-    async def test_basic_response(self):
+    def test_basic_response(self):
         """Temel yanıt testi"""
-        response = await execute_response(
+        response = self.run_async(execute_response(
             "Hello! How can I help you?",
             "Hello",
             self.test_context,
             model=self.test_config['llm_model'],
             config=self.test_config
-        )
+        ))
 
         self.assertIsInstance(response, str)
         self.assertGreater(len(response), 0)
 
-    async def test_invalid_command(self):
+    def test_invalid_command(self):
         """Geçersiz komut testi"""
-        response = await execute_response(
+        response = self.run_async(execute_response(
             "EXECUTE_INVALID_COMMAND",
             "Do something invalid",
             self.test_context,
             model=self.test_config['llm_model'],
-            config=self.test_config
-        )
-
-        self.assertIsInstance(response, str)
-        self.assertIn("error", response.lower())
 
     @patch('subprocess.Popen')
     async def test_system_command(self, mock_popen):

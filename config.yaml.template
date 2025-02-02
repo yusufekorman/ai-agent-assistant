@@ -1,8 +1,16 @@
 config:
-  - lm_studio_completions_url: 'http://localhost:1234/v1/chat/completions'
-  - llm_model: 'llama-3.2-3b-instruct'
+  - llm_provider: 'lm_studio' # Available options: lm_studio, ollama, gpt, deepseek
+  - model: 'llama-3.2-3b-instruct' # Model name to use with the selected provider
+  - api_url: 'http://localhost:1234/v1/chat/completions' # API endpoint URL
   - whisper_model_type: 'base'
   - wake_words: 'jarvis'
+  - temperature: 0.7
+  - max_tokens: -1
+  - batch_size: 100
+  - max_vectors: 1000
+  - auto_save: true
+  - timeout: 30
 secrets:
-  - weather_api_key: 'your_openweathermap_api_key'
-  - news_api_key: 'your_newsapi_key'
+  - auth_token: '' # Auth token for GPT or Deepseek APIs (not needed for LM Studio or Ollama)
+  - weather_api_key: 'test_weather_key'
+  - news_api_key: 'test_news_key'

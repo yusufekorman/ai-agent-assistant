@@ -1,263 +1,319 @@
 import json
 import subprocess
 import webbrowser
-from typing import Dict, Any, List
+from typing import Dict, List, Optional, Any, Tuple, Coroutine
 import os
-
+import asyncio
+from urllib.parse import urlparse
+from functools import lru_cache
+from concurrent.futures import ThreadPoolExecutor
+from utils.logger import get_logger
 import utils.tool_utils as tool_utils
-from utils.query import query_lm_studio
+from utils.query import query_llm
 from utils.index import outputCleaner
 
-# List of allowed commands
-ALLOWED_COMMANDS = {
-    'cmd': [
-        # Windows Commands
-        'taskmgr',      # Task Manager
-        'calc',         # Calculator
-        'notepad',      # Notepad
-        'mspaint',      # Paint
-        'ipconfig',     # Network configuration
-        'dir',          # List directory
-        'echo',         # Echo text
-        'time',         # Show time
-        'date',         # Show date
-        'systeminfo',   # System information
-        'tasklist',     # List processes
-        'netstat',      # Network statistics
-        'ping',         # Network ping
-        'cls',          # Clear screen
-        'type',         # Show file content
-        'vol',          # Disk volume
-        'chkdsk',       # Check disk
-        'tree',         # Directory tree
-        'where',        # File location
+logger = get_logger()
 
-        # Linux/Unix Commands
-        'ls',           # List directory
-        'pwd',          # Print working directory
-        'cat',          # Show file content
-        'ps',           # Process status
-        'df',           # Disk usage
-        'du',           # Directory usage
-        'date',         # Show date
-        'time',         # Show time
-        'uptime',       # System uptime
-        'whoami',       # Current user
-        'uname',        # System information
-        'free',         # Memory usage
-        'top',          # System monitor
-        'clear',        # Clear screen
-        'which',        # Command location
-        'echo'          # Print text
-    ],
-    'ps': [
-        # PowerShell Commands
-        'Get-Date',
-        'Get-Process',
-        'Get-Service',
-        'Get-ComputerInfo',
-        'Test-Connection',
-        'Get-NetAdapter',
-        'Get-Volume',
-        'Get-Disk',
-        'Get-PSDrive',
-        'Get-Command',
-        'Get-History',
-        'Get-Location',
-        'Get-Host',
-        'Get-Random',
-        'Get-EventLog',
-        'Get-LocalUser',
+# Define safe command and domain lists as tuples (immutable and faster)
+ALLOWED_COMMANDS = {
+    'cmd': tuple([
+        'taskmgr', 'calc', 'notepad', 'mspaint', 'ipconfig', 'dir',
+        'echo', 'time', 'date', 'systeminfo', 'tasklist', 'netstat',
+        'ping', 'cls', 'type', 'vol', 'chkdsk', 'tree', 'where',
+        'ls', 'pwd', 'cat', 'ps', 'df', 'du', 'uptime', 'whoami',
+        'uname', 'free', 'top', 'clear', 'which'
+    ]),
+    'ps': tuple([
+        'Get-Date', 'Get-Process', 'Get-Service', 'Get-ComputerInfo',
+        'Test-Connection', 'Get-NetAdapter', 'Get-Volume', 'Get-Disk',
+        'Get-PSDrive', 'Get-Command', 'Get-History', 'Get-Location',
+        'Get-Host', 'Get-Random', 'Get-EventLog', 'Get-LocalUser',
         'Get-Module'
-    ]
+    ])
 }
 
-# Allowed domains for safe URL checks
-ALLOWED_DOMAINS = [
-    # General
-    'github.com',
-    'gitlab.com',
-    'bitbucket.org',
-    'google.com',
-    'youtube.com',
-    'wikipedia.org',
-    'stackoverflow.com',
-    'stackexchange.com',
+ALLOWED_DOMAINS = tuple([
+    # List of safe domains
+    'github.com', 'gitlab.com', 'bitbucket.org', 'google.com',
+    'youtube.com', 'wikipedia.org', 'stackoverflow.com', 'microsoft.com',
+    'azure.com', 'office.com', 'visualstudio.com', 'python.org',
+    'youtube.com', 'facebook.com', 'twitter.com', 'linkedin.com',
+    'x.com'
+])
 
-    # Microsoft
-    'microsoft.com',
-    'azure.com',
-    'office.com',
-    'visualstudio.com',
-    'docs.microsoft.com',
-
-    # Social Media
-    'twitter.com',
-    'x.com',
-    'linkedin.com',
-    'instagram.com',
-    'facebook.com',
-
-    # Education
-    'coursera.org',
-    'udemy.com',
-    'edx.org',
-    'pluralsight.com',
-    'freecodecamp.org',
-    'w3schools.com',
-    'mozilla.org',
-    'python.org',
-
-    # Research & Documentation
-    'arxiv.org',
-    'researchgate.net',
-    'scholar.google.com',
-    'medium.com',
-    'dev.to',
-
-    # News & Information
-    'reuters.com',
-    'bbc.com',
-    'cnn.com',
-    'bloomberg.com',
-    'techcrunch.com',
-    'thehackernews.com',
-
-    # Technical
-    'docker.com',
-    'kubernetes.io',
-    'aws.amazon.com',
-    'digitalocean.com',
-    'heroku.com',
-    'npmjs.com',
-    'pypi.org',
-    'dev.to'
-]
-
+@lru_cache(maxsize=1000)
 def is_command_allowed(cmd_type: str, command: str) -> bool:
-    """Check if the command is in the allowed list"""
+    """Check if command is in allowed list"""
     if cmd_type not in ALLOWED_COMMANDS:
         return False
-        
-    # Check if the command starts with an allowed command
     return any(command.strip().lower().startswith(cmd.lower()) 
               for cmd in ALLOWED_COMMANDS[cmd_type])
 
+@lru_cache(maxsize=1000)
 def is_url_safe(url: str) -> bool:
-    """Check if the URL is safe"""
+    """Check if URL is safe"""
     try:
-        from urllib.parse import urlparse
         domain = urlparse(url).netloc
         return any(domain.endswith(allowed_domain) for allowed_domain in ALLOWED_DOMAINS)
-    except:
+    except Exception as e:
+        logger.error(f"URL parsing error: {e}")
         return False
 
-async def execute_response(response_text: str, user_input: str, context: Dict[str, Any], model='llama-3.2-3b-instruct', config={}):
-    """Execute the AI response and return the final response text"""
+async def execute_shell_command(command: str, timeout: int = 5) -> Tuple[bool, str]:
+    """Execute shell command asynchronously"""
     try:
+        process = await asyncio.create_subprocess_shell(
+            command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+
+        try:
+            stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=timeout)
+            if process.returncode == 0:
+                return True, stdout.decode()
+            return False, stderr.decode()
+        except asyncio.TimeoutError:
+            return False, "Command execution timed out"
+
+    except Exception as e:
+        logger.error(f"Shell command execution error: {e}")
+        return False, str(e)
+
+async def execute_powershell_command(command: str, timeout: int = 5) -> Tuple[bool, str]:
+    """Execute PowerShell command asynchronously"""
+    try:
+        process = await asyncio.create_subprocess_exec(
+            "powershell",
+            "-Command",
+            command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+
+        try:
+            stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=timeout)
+            if process.returncode == 0:
+                return True, stdout.decode()
+            return False, stderr.decode()
+        except asyncio.TimeoutError:
+            return False, "PowerShell command execution timed out"
+
+    except Exception as e:
+        logger.error(f"PowerShell command execution error: {e}")
+        return False, str(e)
+
+async def handle_system_command(cmd_type: str, command: str) -> Optional[str]:
+    """Handle system command"""
+    if not is_command_allowed(cmd_type, command):
+        return f"Command '{command}' cannot be executed due to security restrictions."
+
+    success, output = await (
+        execute_shell_command(command) if cmd_type == "cmd"
+        else execute_powershell_command(command)
+    )
+
+    if success:
+        logger.info(f"Command executed successfully: {command}")
+        return output
+    else:
+        logger.error(f"Command execution failed: {output}")
+        return f"Command error: {output}"
+
+async def handle_browser_command(url: str) -> Optional[str]:
+    """Handle browser command"""
+    if not is_url_safe(url):
+        return f"Access to '{url}' blocked due to security restrictions."
+
+    try:
+        # Run browser open operation in thread pool
+        with ThreadPoolExecutor() as executor:
+            await asyncio.get_event_loop().run_in_executor(
+                executor,
+                webbrowser.open,
+                url
+            )
+        return None
+    except Exception as e:
+        logger.error(f"Browser command error: {e}")
+        return f"URL opening error: {str(e)}"
+
+async def handle_need_request(
+    need_type: str,
+    query: str,
+    context: Dict[str, Any]
+) -> Optional[str]:
+    """Handle need requests asynchronously"""
+    try:
+        if need_type == "input":
+            # Run input operation in thread pool
+            with ThreadPoolExecutor() as executor:
+                user_input = await asyncio.get_event_loop().run_in_executor(
+                    executor,
+                    input,
+                    query
+                )
+            return f"<user_input>{user_input}</user_input>"
+
+        # Run API calls in parallel
+        if need_type == "weather_forecast":
+            return await tool_utils.get_weather(
+                query,
+                context["secrets"].get("weather_api_key")
+            )
+        elif need_type == "wiki":
+            return await tool_utils.search_wikipedia(query)
+        elif need_type == "news":
+            return await tool_utils.get_news(
+                query,
+                context["secrets"].get("news_api_key")
+            )
+
+        return None
+
+    except Exception as e:
+        logger.error(f"Error handling need request: {e}")
+        return None
+
+async def process_second_response(
+    response_text: str,
+    user_input: str,
+    context: Dict[str, Any],
+    model: Optional[str],
+    config: Dict[str, Any]
+) -> str:
+    from utils.config_manager import get_config_manager
+    config_manager = get_config_manager()
+
+    # Use provided model or get from config
+    model_name = model if model else config_manager.get_config("model", "llama-3.2-3b-instruct")
+    
+    # Update API configuration
+    current_config = config.copy()
+    current_config.update({
+        key: config_manager.get_config(key)
+        for key in ["temperature", "max_tokens", "timeout"]
+        if config_manager.get_config(key) is not None
+    })
+    """Process second response"""
+    try:
+        second_response = await query_llm(
+            prompt=user_input,
+            answer=response_text,
+            system_ip=context.get("system_ip", "unknown"),
+            config=current_config,
+            model=str(model_name)  # Convert to str for type safety
+        )
+
+        if second_response and "choices" in second_response:
+            response = second_response["choices"][0]["message"]["content"]
+            response = outputCleaner(response)
+            try:
+                response = await execute_response(
+                    response,
+                    user_input,
+                    context,
+                    model
+                )
+            except json.JSONDecodeError:
+                pass
+            return response
+
+    except Exception as e:
+        logger.error(f"Error processing second response: {e}")
+
+    return response_text
+
+async def execute_response(
+    response_text: str,
+    user_input: str,
+    context: Dict[str, Any],
+    model: Optional[str] = None,
+    config: Dict[str, Any] = {}
+) -> str:
+    from utils.config_manager import get_config_manager
+    config_manager = get_config_manager()
+
+    # Get configuration values
+    model = model or config_manager.get_config("model")
+    
+    # Add API keys to context
+    if "secrets" not in context:
+        context["secrets"] = {}
+    context["secrets"].update({
+        "weather_api_key": config.get("weather_api_key") or config_manager.get_secret("weather_api_key"),
+        "news_api_key": config.get("news_api_key") or config_manager.get_secret("news_api_key")
+    })
+    """
+    Execute AI response asynchronously
+    
+    Args:
+        response_text: AI response
+        user_input: User input
+        context: Context information
+        model: Model to use
+        config: Configuration settings
+    
+    Returns:
+        Processed response text
+    """
+    try:
+        # Parse response
         response_data = json.loads(response_text)
-        
-        # Extract components
         response = response_data.get("response", "")
         need = response_data.get("need", "")
         commands = response_data.get("commands", "")
-        
-        # Handle data requests
+
+        # Process need requests
         if need:
             try:
-                request_type, query = need.split(":", 1)
+                need_type, query = need.split(":", 1)
+                need_response = await handle_need_request(need_type, query, context)
+
+                if need_response:
+                    response = await process_second_response(
+                        response_text,
+                        user_input,
+                        context,
+                        model,
+                        config
+                    )
+
             except ValueError:
+                logger.error("Invalid need format")
                 return "Error: Invalid need format"
-            need_response = None
 
-            if request_type == "input":
-                print("[DEBUG] Getting user input")
-                need_response = "<user_input>" + input(query) + "</user_input>"
-            elif request_type == "weather_forecast":
-                print("[DEBUG] Getting weather data")
-                need_response = await tool_utils.get_weather(query, context["secrets"].get("weather_api_key"))
-                    
-            elif request_type == "wiki":
-                print("[DEBUG] Searching Wikipedia")
-                need_response = await tool_utils.search_wikipedia(query)
-                    
-            elif request_type == "news":
-                print("[DEBUG] Getting news data")
-                need_response = await tool_utils.get_news(query, context["secrets"].get("news_api_key"))
-
-            if need_response:
-
-                second_response = await query_lm_studio(
-                    prompt=user_input,
-                    answer=response_text,
-                    prompt2=need_response,
-                    system_ip=context.get("system_ip", "unknown"),
-                    config=config,
-                    model=model
-                )
-
-                if second_response and "choices" in second_response:
-                    response = second_response["choices"][0]["message"]["content"]
-                    response = outputCleaner(response)
-                    try:
-                        # execute response again
-                        response = await execute_response(response, user_input, context, model)
-                    except json.JSONDecodeError:
-                        # If not JSON, use the response as is
-                        pass
-        
-        # Handle system commands
+        # Process system commands
         if commands:
-            cmd_type, *cmd_args = commands.split(":", 1)
-            
-            if cmd_type in ["cmd", "ps"] and cmd_args:
-                if not is_command_allowed(cmd_type, cmd_args[0]):
-                    return f"Command '{cmd_args[0]}' cannot be executed due to security restrictions."
-                
-                try:
-                    if cmd_type == "cmd":
-                        result = subprocess.run(
-                            cmd_args[0],
-                            shell=True,
-                            capture_output=True,
-                            text=True,
-                            timeout=5  # Limit timeout to 5 seconds
-                        )
-                    else:  # PowerShell
-                        result = subprocess.run(
-                            ["powershell", "-Command", cmd_args[0]],
-                            capture_output=True,
-                            text=True,
-                            timeout=5
-                        )
-                    
-                    if result.returncode == 0:
-                        print(f"Command output: {result.stdout}")
-                    else:
-                        response += f"\nCommand error: {result.stderr}"
-                        
-                except subprocess.TimeoutExpired:
-                    response += "\nCommand timed out."
-                except Exception as e:
-                    response += f"\nCommand execution error: {str(e)}"
-                    
-            elif cmd_type == "open_browser" and cmd_args:
-                url = cmd_args[0]
-                if not is_url_safe(url):
-                    return f"Access to '{url}' blocked due to security restrictions."
-                try:
-                    webbrowser.open(url)
-                except Exception as e:
-                    response += f"\nURL opening error: {str(e)}"
-        
+            parts = commands.split(":", 1)
+            if len(parts) != 2:
+                return "Error: Invalid command format"
+
+            cmd_type, command = parts
+
+            if cmd_type in ["cmd", "ps"]:
+                output = await handle_system_command(cmd_type, command)
+                if output:
+                    response += f"\n{output}"
+
+            elif cmd_type == "open_browser":
+                output = await handle_browser_command(command)
+                if output:
+                    response += f"\n{output}"
+
         return response
-        
+
     except json.JSONDecodeError:
+        logger.error("Invalid response format")
         return "Error: Invalid response format"
     except Exception as e:
+        logger.error(f"Response processing error: {e}")
         return f"Response processing error: {str(e)}"
 
-
+# Export
 export = {
-    "execute_response": execute_response
+    "execute_response": execute_response,
+    "handle_system_command": handle_system_command,
+    "handle_browser_command": handle_browser_command,
+    "handle_need_request": handle_need_request
 }
