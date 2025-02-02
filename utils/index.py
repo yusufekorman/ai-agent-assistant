@@ -1,6 +1,9 @@
 
 def outputCleaner(output):
 
+    # clean unicode characters
+    output = output.encode('ascii', 'ignore').decode('ascii')
+
     # clean think tags
     if "</think>" in output:
         output = output.split("</think>")[1]

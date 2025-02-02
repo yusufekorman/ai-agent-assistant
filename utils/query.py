@@ -1,4 +1,3 @@
-from traceback import print_tb
 import aiohttp
 import time
 from datetime import datetime
@@ -15,7 +14,7 @@ days = [
 
 async def query_lm_studio(prompt, answer=None, prompt2=None, system_ip="", model='unsloth/llama-3.2-3b-instruct', memory_vectors=[], config={}):
     start_time = time.time()
-    print(config["lm_studio_completions_url"])
+    # print(config["lm_studio_completions_url"])
     url = config["lm_studio_completions_url"]
     headers = {"Content-Type": "application/json"}
     dt = datetime.now()
@@ -67,9 +66,11 @@ async def query_lm_studio(prompt, answer=None, prompt2=None, system_ip="", model
                 print(f"LM Studio response time: {elapsed_time} seconds")
 
                 # for debugging
+                """
                 with open("ai_logs.log", "a") as f:
                     f.write(f"Request: {payload}\n")
                     f.write(f"Response: {await response.text()}\n\n")
+                """
                 return await response.json()
     except Exception as e:
         print(f"LM Studio error: {e}")

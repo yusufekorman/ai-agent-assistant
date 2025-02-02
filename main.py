@@ -31,9 +31,6 @@ with open("config.yaml", "r") as file:
     _config = config.get("config", {})
     config = {key: value for secret in _config for key, value in secret.items()}
 
-    print("Config loaded")
-    print(f"Config: {config}")
-
 async def init_system():
     """Initialize system components"""
     global system_ip
@@ -105,7 +102,8 @@ async def main():
         while True:
             try:
                 if input_mode == 1:
-                    await handleAI(input("You: ").strip())
+                    user_input = input("You: ").strip()
+                    await handleAI(user_input)
                 else:
                     print("Wait until it says 'say jarvis' before speaking.")
                     recorder = AudioToTextRecorder(model=config.get("whisper_model_type", "base"), 

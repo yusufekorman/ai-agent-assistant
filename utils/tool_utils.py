@@ -4,10 +4,10 @@ import re
 import xml.etree.ElementTree as ET
 from typing import Optional
 import datetime
+import os
 
 async def search_wikipedia(query):
     try:
-
         results = []
         async with aiohttp.ClientSession() as session:
             wiki_url = f"https://en.wikipedia.org/w/api.php"
@@ -29,7 +29,6 @@ async def search_wikipedia(query):
                         results.append({
                             'title': article['title'],
                             'text': text.replace('&quot;', '"').replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>'),
-                            'url': f"https://en.wikipedia.org/wiki/{article['title'].replace(' ', '_')}"
                         })
 
         response_data = json.dumps({
@@ -137,6 +136,22 @@ async def get_news(query: str, api_key: Optional[str]):
                     return "Could not fetch news data"
     except Exception as e:
         return f"Error getting news data: {str(e)}"
+
+async def read_notes(config={}):
+    """Read notes from files"""
+    try:
+        notes = []
+        path = config.get("notes_path", "C:/notes")
+        for file in os.listdir(path):
+            if file.endswith(".md"):
+                with open(os.path.join(path, file), "r") as f:
+                    notes.append({
+                        "title": file.split(".")[0],
+                        "content": f.read()
+                    })
+        return json.dumps(notes)
+    except Exception as e:
+        return f"Error reading notes: {str(e)}"
 
 export = {
     'search_wikipedia': search_wikipedia,
