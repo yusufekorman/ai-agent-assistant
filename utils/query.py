@@ -178,8 +178,8 @@ async def query_llm(
                 raise ValueError(f"Authentication token required for {provider}")
 
         # Get other configuration values
-        temperature = config.get("temperature") or config_manager.get_config("temperature")
-        max_tokens = config.get("max_tokens") or config_manager.get_config("max_tokens")
+        temperature = config.get("temperature", config_manager.get_config("temperature"))
+        max_tokens = config.get("max_tokens", config_manager.get_config("max_tokens"))
         timeout = config_manager.get_config("timeout", 30)
         model_name = config_manager.get_config("model", model)
 

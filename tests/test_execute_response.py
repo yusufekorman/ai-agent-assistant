@@ -85,6 +85,8 @@ class TestExecuteResponse(unittest.TestCase):
             "Do something invalid",
             self.test_context,
             model=self.test_config['llm_model'],
+            config=self.test_config
+        ))
 
     @patch('subprocess.Popen')
     async def test_system_command(self, mock_popen):

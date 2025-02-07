@@ -178,7 +178,7 @@ async def get_weather(city: str, api_key: Optional[str]) -> str:
             
             data = await make_api_request(
                 session,
-                "http://api.openweathermap.org/data/2.5/forecast",
+                "https://api.openweathermap.org/data/2.5/forecast",
                 params=params
             )
             
@@ -195,7 +195,7 @@ async def get_weather(city: str, api_key: Optional[str]) -> str:
                     "%Y-%m-%d %H:%M:%S"
                 )
                 
-                if forecast_date.date() in (today.date(), tomorrow.date()):
+                if forecast_date.date() in (today.date(), tomorrow.date()): # Today and tomorrow
                     weather_data.append({
                         "datetime": forecast["dt_txt"],
                         "temperature": forecast["main"]["temp"],

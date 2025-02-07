@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
 import asyncio
-from utils.query import query_lm_studio
+from utils.query import query_llm
 
 class TestQueryLMStudio(unittest.TestCase):
     def setUp(self):
@@ -26,7 +26,7 @@ class TestQueryLMStudio(unittest.TestCase):
             return_value=mock_response
         )
 
-        response = await query_lm_studio(
+        response = await query_llm(
             prompt=self.test_prompt,
             memory_vectors=self.test_memory,
             system_ip=self.test_system_ip,
@@ -53,7 +53,7 @@ class TestQueryLMStudio(unittest.TestCase):
         )
 
         with self.assertRaises(Exception):
-            await query_lm_studio(
+            await query_llm(
                 prompt=self.test_prompt,
                 memory_vectors=self.test_memory,
                 system_ip=self.test_system_ip,
@@ -66,7 +66,7 @@ class TestQueryLMStudio(unittest.TestCase):
         invalid_config = {}
         
         with self.assertRaises(KeyError):
-            await query_lm_studio(
+            await query_llm(
                 prompt=self.test_prompt,
                 memory_vectors=self.test_memory,
                 system_ip=self.test_system_ip,
@@ -77,7 +77,7 @@ class TestQueryLMStudio(unittest.TestCase):
         # Boş prompt durumunu test et
         async def run_test():
             with self.assertRaises(ValueError):
-                await query_lm_studio(
+                await query_llm(
                     prompt="",
                     memory_vectors=self.test_memory,
                     system_ip=self.test_system_ip,

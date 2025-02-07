@@ -32,15 +32,6 @@ ALLOWED_COMMANDS = {
     ])
 }
 
-ALLOWED_DOMAINS = tuple([
-    # List of safe domains
-    'github.com', 'gitlab.com', 'bitbucket.org', 'google.com',
-    'youtube.com', 'wikipedia.org', 'stackoverflow.com', 'microsoft.com',
-    'azure.com', 'office.com', 'visualstudio.com', 'python.org',
-    'youtube.com', 'facebook.com', 'twitter.com', 'linkedin.com',
-    'x.com'
-])
-
 @lru_cache(maxsize=1000)
 def is_command_allowed(cmd_type: str, command: str) -> bool:
     """Check if command is in allowed list"""
@@ -48,16 +39,6 @@ def is_command_allowed(cmd_type: str, command: str) -> bool:
         return False
     return any(command.strip().lower().startswith(cmd.lower()) 
               for cmd in ALLOWED_COMMANDS[cmd_type])
-
-@lru_cache(maxsize=1000)
-def is_url_safe(url: str) -> bool:
-    """Check if URL is safe"""
-    try:
-        domain = urlparse(url).netloc
-        return any(domain.endswith(allowed_domain) for allowed_domain in ALLOWED_DOMAINS)
-    except Exception as e:
-        logger.error(f"URL parsing error: {e}")
-        return False
 
 async def execute_shell_command(command: str, timeout: int = 5) -> Tuple[bool, str]:
     """Execute shell command asynchronously"""
@@ -122,8 +103,6 @@ async def handle_system_command(cmd_type: str, command: str) -> Optional[str]:
 
 async def handle_browser_command(url: str) -> Optional[str]:
     """Handle browser command"""
-    if not is_url_safe(url):
-        return f"Access to '{url}' blocked due to security restrictions."
 
     try:
         # Run browser open operation in thread pool
@@ -213,7 +192,8 @@ async def process_second_response(
                     response,
                     user_input,
                     context,
-                    model
+                    model,
+                    isFromExecuteResponseSecond=True
                 )
             except json.JSONDecodeError:
                 pass
@@ -229,13 +209,14 @@ async def execute_response(
     user_input: str,
     context: Dict[str, Any],
     model: Optional[str] = None,
-    config: Dict[str, Any] = {}
+    config: Dict[str, Any] = {},
+    isFromExecuteResponseSecond: bool = False
 ) -> str:
     from utils.config_manager import get_config_manager
     config_manager = get_config_manager()
 
     # Get configuration values
-    model = model or config_manager.get_config("model")
+    model = config_manager.get_config("model", model)
     
     # Add API keys to context
     if "secrets" not in context:
@@ -270,7 +251,7 @@ async def execute_response(
                 need_type, query = need.split(":", 1)
                 need_response = await handle_need_request(need_type, query, context)
 
-                if need_response:
+                if need_response and not isFromExecuteResponseSecond:
                     response = await process_second_response(
                         response_text,
                         user_input,
@@ -278,6 +259,8 @@ async def execute_response(
                         model,
                         config
                     )
+                elif need_response:
+                    response = need_response
 
             except ValueError:
                 logger.error("Invalid need format")
