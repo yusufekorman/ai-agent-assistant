@@ -4,7 +4,7 @@ from typing import List, Any, Callable, Dict
 import statistics
 from utils.logger import get_logger
 from utils.memory_manager import MemoryManager
-from utils.query import query_lm_studio
+from utils.query import query_llm
 from utils.execute_response import execute_response
 
 logger = get_logger()
@@ -69,8 +69,8 @@ class Benchmark:
         logger.info("Testing LM Studio queries...")
         for _ in range(sample_size):
             await self.measure_async(
-                "query_lm_studio",
-                query_lm_studio,
+                "query_llm",
+                query_llm,
                 prompt=test_prompt,
                 config=config
             )
