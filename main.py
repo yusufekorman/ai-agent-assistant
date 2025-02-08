@@ -3,6 +3,7 @@ from RealtimeSTT import AudioToTextRecorder
 import asyncio
 import aiohttp
 import yaml
+import speech_recognition as sr
 
 from utils.execute_response import execute_response
 from utils.query import query_llm
@@ -97,6 +98,12 @@ async def main():
         
         # Select input mode
         input_mode = select_input_mode()
+
+        if input_mode == 2:
+            print("Voice input mode selected. Please select the microphone you want to use.")
+            for i, device in enumerate(sr.Microphone.list_microphone_names()):
+                print(f"{i+1}. {device}")
+            choice = int(input("Your choice: "))
         
         # Clean program exit with Ctrl+C
         while True:
@@ -108,7 +115,7 @@ async def main():
                     print("Wait until it says 'say jarvis' before speaking.")
                     recorder = AudioToTextRecorder(model=config.get("whisper_model_type", "base"), 
                                                 wake_words=config.get("wake_words", ["jarvis"]), 
-                                                language="en")
+                                                language="en", input_device_index=choice-1)
                     await handleAI(recorder.text())
             except KeyboardInterrupt:
                 print("\nShutting down program...")

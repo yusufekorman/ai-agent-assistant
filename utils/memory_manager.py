@@ -180,7 +180,10 @@ class MemoryManager:
             top_k_indices = np.argpartition(similarities, -top_k)[-top_k:]
             top_k_indices = top_k_indices[np.argsort(similarities[top_k_indices])][::-1]
 
-            return [self.memoryVectors[i] for i in top_k_indices]
+            # return [self.memoryVectors[i] for i in top_k_indices]
+
+            # Return only 0.7+ similarity
+            return [self.memoryVectors[i] for i in top_k_indices if similarities[i] >= 0.7]
 
         except Exception as e:
             logger.error(f"Error in vector search: {str(e)}")

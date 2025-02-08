@@ -130,8 +130,9 @@ def _format_context(timestamp: str, day: str, system_ip: str, memory_str: str = 
 
 def _format_memory_vectors(vectors: List[str]) -> str:
     """Format memory vectors"""
-    if not vectors:
+    if not vectors or vectors is None or len(vectors) == 0:
         return ""
+    print(vectors)
     return "Memory Vector:\n" + "\n".join(f"- {vector}" for vector in vectors)
 
 async def query_llm(
