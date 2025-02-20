@@ -1,7 +1,8 @@
 config:
-  - llm_provider: 'lm_studio' # Available options: lm_studio, ollama, gpt, deepseek
+  - llm_provider: 'lm_studio' # Available options: lm_studio, openai
   - model: 'llama-3.2-3b-instruct' # Model name to use with the selected provider
-  - api_url: 'http://localhost:1234/v1/chat/completions' # API endpoint URL
+  - api_url: 'http://localhost:1234/v1' # API endpoint URL
+  - auth_token: '' # Auth token for OpenAI API Key
   - whisper_model_type: 'base'
   - wake_words: 'jarvis'
   - temperature: 0.7
@@ -11,6 +12,5 @@ config:
   - auto_save: true
   - timeout: 30
 secrets:
-  - auth_token: '' # Auth token for GPT or Deepseek APIs (not needed for LM Studio or Ollama)
   - weather_api_key: 'test_weather_key'
   - news_api_key: 'test_news_key'
