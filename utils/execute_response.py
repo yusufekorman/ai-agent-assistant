@@ -21,7 +21,7 @@ ALLOWED_COMMANDS = {
         'echo', 'time', 'date', 'systeminfo', 'tasklist', 'netstat',
         'ping', 'cls', 'type', 'vol', 'chkdsk', 'tree', 'where',
         'ls', 'pwd', 'cat', 'ps', 'df', 'du', 'uptime', 'whoami',
-        'uname', 'free', 'top', 'clear', 'which'
+        'uname', 'free', 'top', 'clear', 'which', 'code'
     ]),
     'ps': tuple([
         'Get-Date', 'Get-Process', 'Get-Service', 'Get-ComputerInfo',
@@ -32,6 +32,15 @@ ALLOWED_COMMANDS = {
     ])
 }
 
+ALLOWED_DOMAINS = tuple([
+    'google.com', 'youtube.com', 'wikipedia.org', 'github.com',
+    'stackoverflow.com', 'linkedin.com', 'twitter.com', 'facebook.com',
+    'instagram.com', 'reddit.com', 'pinterest.com', 'x.com', 'whatsapp.com', 
+    'web.whatsapp.com', 'discord.com', 'twitch.tv', 'amazon.com', 'ebay.com', 
+    'aliexpress.com', 'microsoft.com', 'apple.com', 'yahoo.com', 'bing.com', 
+    'duckduckgo.com', 'meet.google.com', 'zoom.us', 'slack.com', 'messenger.com'
+])
+
 @lru_cache(maxsize=1000)
 def is_command_allowed(cmd_type: str, command: str) -> bool:
     """Check if command is in allowed list"""
@@ -39,6 +48,12 @@ def is_command_allowed(cmd_type: str, command: str) -> bool:
         return False
     return any(command.strip().lower().startswith(cmd.lower()) 
               for cmd in ALLOWED_COMMANDS[cmd_type])
+
+@lru_cache(maxsize=1000)
+def is_domain_allowed(url: str) -> bool:
+    """Check if domain is in allowed list"""
+    parsed_url = urlparse(url)
+    return parsed_url.netloc.lower() in ALLOWED_DOMAINS
 
 async def execute_shell_command(command: str, timeout: int = 5) -> Tuple[bool, str]:
     """Execute shell command asynchronously"""
@@ -103,6 +118,9 @@ async def handle_system_command(cmd_type: str, command: str) -> Optional[str]:
 
 async def handle_browser_command(url: str) -> Optional[str]:
     """Handle browser command"""
+
+    if not is_domain_allowed(url):
+        return f"URL '{url}' cannot be opened due to security restrictions."
 
     try:
         # Run browser open operation in thread pool

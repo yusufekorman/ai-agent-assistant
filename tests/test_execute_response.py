@@ -1,18 +1,22 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, AsyncMock
 import asyncio
-from utils.execute_response import execute_response
+import json
+from utils.execute_response import execute_response, handle_system_command, handle_browser_command
 
 class TestExecuteResponse(unittest.TestCase):
     def setUp(self):
         """Her test öncesi çalışacak kurulum"""
         self.test_config = {
-            'llm_model': 'llama-3.2-3b-instruct'
+            'llm_model': 'llama-3.2-3b-instruct',
+            'temperature': 0.7,
+            'max_tokens': 150,
+            'timeout': 30
         }
         self.test_context = {
             'secrets': {
-                'weather_api_key': 'test_key',
-                'news_api_key': 'test_key'
+                'weather_api_key': 'test_weather_key',
+                'news_api_key': 'test_news_key'
             },
             'system_ip': '127.0.0.1'
         }
@@ -21,121 +25,185 @@ class TestExecuteResponse(unittest.TestCase):
         """Asenkron fonksiyonu senkron olarak çalıştır"""
         return asyncio.run(coroutine)
 
-    @patch('requests.get')
-    def test_weather_command(self, mock_get):
-        """Hava durumu komutunun testi"""
-        # Mock API yanıtı
-        mock_get.return_value.json.return_value = {
-            'main': {'temp': 20, 'humidity': 65},
-            'weather': [{'description': 'clear sky'}]
-        }
-        mock_get.return_value.status_code = 200
-
-        response = self.run_async(execute_response(
-            "Checking weather in Istanbul",
-            "What's the weather in Istanbul?",
-            self.test_context,
-            model=self.test_config['llm_model'],
-            config=self.test_config
-        ))
-
-        self.assertIsInstance(response, str)
-        self.assertIn("Istanbul", response)
-
-    @patch('requests.get')
-    def test_news_command(self, mock_get):
-        """Haber komutunun testi"""
-        # Mock API yanıtı
-        mock_get.return_value.json.return_value = {
-            'articles': [
-                {'title': 'Test News 1', 'description': 'Test Description 1'},
-                {'title': 'Test News 2', 'description': 'Test Description 2'}
-            ]
-        }
-        mock_get.return_value.status_code = 200
-
-        response = self.run_async(execute_response(
-            "Getting latest technology news",
-            "Show me tech news",
-            self.test_context,
-            model=self.test_config['llm_model'],
-            config=self.test_config
-        ))
-
-        self.assertIsInstance(response, str)
-        self.assertIn("news", response.lower())
-
-    def test_basic_response(self):
-        """Temel yanıt testi"""
-        response = self.run_async(execute_response(
-            "Hello! How can I help you?",
-            "Hello",
-            self.test_context,
-            model=self.test_config['llm_model'],
-            config=self.test_config
-        ))
-
-        self.assertIsInstance(response, str)
-        self.assertGreater(len(response), 0)
-
-    def test_invalid_command(self):
-        """Geçersiz komut testi"""
-        response = self.run_async(execute_response(
-            "EXECUTE_INVALID_COMMAND",
-            "Do something invalid",
-            self.test_context,
-            model=self.test_config['llm_model'],
-            config=self.test_config
-        ))
-
-    @patch('subprocess.Popen')
-    async def test_system_command(self, mock_popen):
-        """Sistem komutu testi"""
-        mock_popen.return_value.communicate.return_value = (b"Test output", b"")
-        mock_popen.return_value.returncode = 0
+    @patch('utils.tool_utils.get_weather')
+    async def test_weather_need_request(self, mock_weather):
+        """Hava durumu need request testi"""
+        mock_weather.return_value = "Weather: 20°C, Clear sky"
+        
+        response_text = json.dumps({
+            "response": "Let me check the weather",
+            "need": "weather_forecast:Istanbul",
+            "commands": ""
+        })
 
         response = await execute_response(
-            "EXECUTE_SYSTEM_COMMAND: echo test",
-            "Run echo test",
+            response_text,
+            "What's the weather in Istanbul?",
             self.test_context,
             model=self.test_config['llm_model'],
             config=self.test_config
         )
 
         self.assertIsInstance(response, str)
-        self.assertIn("executed", response.lower())
+        mock_weather.assert_called_once_with("Istanbul", "test_weather_key")
 
-    def test_empty_response(self):
+    @patch('utils.tool_utils.get_news')
+    async def test_news_need_request(self, mock_news):
+        """Haber need request testi"""
+        mock_news.return_value = "Latest news: Test headline"
+        
+        response_text = json.dumps({
+            "response": "Here are the latest news",
+            "need": "news:technology",
+            "commands": ""
+        })
+
+        response = await execute_response(
+            response_text,
+            "Show me tech news",
+            self.test_context,
+            model=self.test_config['llm_model'],
+            config=self.test_config
+        )
+
+        self.assertIsInstance(response, str)
+        mock_news.assert_called_once_with("technology", "test_news_key")
+
+    @patch('utils.tool_utils.search_wikipedia')
+    async def test_wiki_need_request(self, mock_wiki):
+        """Wikipedia need request testi"""
+        mock_wiki.return_value = "Wikipedia summary: Test article"
+        
+        response_text = json.dumps({
+            "response": "Let me search Wikipedia",
+            "need": "wiki:Artificial Intelligence",
+            "commands": ""
+        })
+
+        response = await execute_response(
+            response_text,
+            "What is AI?",
+            self.test_context,
+            model=self.test_config['llm_model'],
+            config=self.test_config
+        )
+
+        self.assertIsInstance(response, str)
+        mock_wiki.assert_called_once_with("Artificial Intelligence")
+
+    async def test_handle_system_command_allowed(self):
+        """İzin verilen sistem komutu testi"""
+        cmd_type = "cmd"
+        command = "echo test"
+        
+        result = await handle_system_command(cmd_type, command)
+        self.assertIsInstance(result, str)
+
+    async def test_handle_system_command_denied(self):
+        """İzin verilmeyen sistem komutu testi"""
+        cmd_type = "cmd"
+        command = "rm -rf /"
+        
+        result = await handle_system_command(cmd_type, command)
+        self.assertIn("security restrictions", result)
+
+    @patch('webbrowser.open')
+    async def test_handle_browser_command(self, mock_browser):
+        """Tarayıcı komutu testi"""
+        mock_browser.return_value = True
+        
+        url = "https://www.example.com"
+        result = await handle_browser_command(url)
+        self.assertIsNone(result)
+        mock_browser.assert_called_once_with(url)
+
+    async def test_invalid_json_response(self):
+        """Geçersiz JSON yanıtı testi"""
+        response_text = "Invalid JSON"
+        
+        response = await execute_response(
+            response_text,
+            "Test input",
+            self.test_context,
+            model=self.test_config['llm_model'],
+            config=self.test_config
+        )
+
+        self.assertIn("Invalid response format", response)
+
+    async def test_empty_response(self):
         """Boş yanıt testi"""
-        async def run_test():
-            with self.assertRaises(ValueError):
-                await execute_response(
-                    "",
-                    "Test input",
-                    self.test_context,
-                    model=self.test_config['llm_model'],
-                    config=self.test_config
-                )
+        response_text = json.dumps({
+            "response": "",
+            "need": "",
+            "commands": ""
+        })
+        
+        response = await execute_response(
+            response_text,
+            "Test input",
+            self.test_context,
+            model=self.test_config['llm_model'],
+            config=self.test_config
+        )
 
-        asyncio.run(run_test())
+        self.assertEqual(response, "")
+
+    @patch('asyncio.create_subprocess_shell')
+    async def test_system_command_timeout(self, mock_subprocess):
+        """Sistem komutu zaman aşımı testi"""
+        mock_process = AsyncMock()
+        mock_process.communicate = AsyncMock(side_effect=asyncio.TimeoutError())
+        mock_subprocess.return_value = mock_process
+
+        response_text = json.dumps({
+            "response": "Running command",
+            "need": "",
+            "commands": "cmd:ping localhost -t"
+        })
+
+        response = await execute_response(
+            response_text,
+            "Run endless ping",
+            self.test_context,
+            model=self.test_config['llm_model'],
+            config=self.test_config
+        )
+
+        self.assertIn("Command execution timed out", response)
+
+    async def test_invalid_need_format(self):
+        """Geçersiz need format testi"""
+        response_text = json.dumps({
+            "response": "Testing",
+            "need": "invalid_format",
+            "commands": ""
+        })
+
+        response = await execute_response(
+            response_text,
+            "Test input",
+            self.test_context,
+            model=self.test_config['llm_model'],
+            config=self.test_config
+        )
+
+        self.assertIn("Invalid need format", response)
 
 def run_async_tests():
     """Asenkron testleri çalıştır"""
     async def run_all_tests():
-        test_cases = [
-            'test_weather_command',
-            'test_news_command',
-            'test_basic_response',
-            'test_invalid_command',
-            'test_system_command'
-        ]
-        
         test_instance = TestExecuteResponse()
         test_instance.setUp()
         
-        for test_name in test_cases:
+        test_methods = [method for method in dir(test_instance) 
+                       if method.startswith('test_') and 
+                       asyncio.iscoroutinefunction(getattr(test_instance, method))]
+        
+        for test_name in test_methods:
             print(f"Running {test_name}...")
             await getattr(test_instance, test_name)()
+            print(f"{test_name} completed successfully")
 
     asyncio.run(run_all_tests())
 

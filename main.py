@@ -19,6 +19,9 @@ engine.setProperty('voice', engine.getProperty('voices')[0].id)
 # Initialize memory manager
 memory_manager = MemoryManager()
 
+with open("system_prompt.txt", "r") as file:
+    system_prompt = file.read()
+
 # Global variables
 system_ip = None
 input_mode = 1  # Default to text input
@@ -70,7 +73,8 @@ async def handleAI(user_input):
         memory_vectors=top5_memoryVectors,
         system_ip=system_ip or "unknown",
         config=config,
-        model=config.get('llm_model', 'llama-3.2-3b-instruct')
+        model=config.get('llm_model', 'llama-3.2-3b-instruct'),
+        system_prompt=system_prompt
     )
 
     # Handle AI response

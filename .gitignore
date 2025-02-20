@@ -137,6 +137,8 @@ env.bak/
 venv.bak/
 secrets.json
 config.yaml
+config.openai.yaml
+config.lm_studio.yaml
 
 # Spyder project settings
 .spyderproject
