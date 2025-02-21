@@ -5,7 +5,7 @@ from utils.query import query_llm
 
 class TestQueryLLM(unittest.TestCase):
     def setUp(self):
-        """Her test öncesi çalışacak kurulum"""
+        """Setup to run before each test"""
         self.test_config = {
             'llm_provider': 'lm_studio',
             'api_url': 'http://localhost:1234/v1',
@@ -20,13 +20,13 @@ class TestQueryLLM(unittest.TestCase):
         self.test_system_prompt = "You are a helpful assistant"
 
     def run_async(self, coroutine):
-        """Asenkron fonksiyonu senkron olarak çalıştır"""
+        """Run asynchronous function synchronously"""
         return asyncio.run(coroutine)
 
     @patch('openai.OpenAI')
     async def test_lm_studio_query(self, mock_openai):
-        """LM Studio sorgu testi"""
-        # Mock yanıtı hazırla
+        """LM Studio query test"""
+        # Prepare mock response
         mock_response = MagicMock()
         mock_response.choices = [
             MagicMock(message=MagicMock(content="Test response"))
@@ -48,7 +48,7 @@ class TestQueryLLM(unittest.TestCase):
         self.assertIn("choices", response)
         self.assertEqual(response["choices"][0]["message"]["content"], "Test response")
 
-        # API çağrısı kontrolleri
+        # API call checks
         mock_client.chat.completions.create.assert_called_once()
         call_args = mock_client.chat.completions.create.call_args[1]
         self.assertEqual(call_args["temperature"], 0.7)
@@ -56,8 +56,8 @@ class TestQueryLLM(unittest.TestCase):
 
     @patch('openai.OpenAI')
     async def test_openai_query(self, mock_openai):
-        """OpenAI sorgu testi"""
-        # OpenAI yapılandırması
+        """OpenAI query test"""
+        # OpenAI configuration
         openai_config = self.test_config.copy()
         openai_config.update({
             'llm_provider': 'openai',
@@ -83,7 +83,7 @@ class TestQueryLLM(unittest.TestCase):
         self.assertIsNotNone(response)
         self.assertEqual(response["choices"][0]["message"]["content"], "OpenAI response")
 
-        # OpenAI özel parametrelerinin kontrolü
+        # Check OpenAI specific parameters
         mock_openai.assert_called_with(
             api_key='test_token',
             base_url=openai_config['api_url']
@@ -91,7 +91,7 @@ class TestQueryLLM(unittest.TestCase):
 
     @patch('openai.OpenAI')
     async def test_context_handling(self, mock_openai):
-        """Context işleme testi"""
+        """Context handling test"""
         mock_response = MagicMock()
         mock_response.choices = [
             MagicMock(message=MagicMock(content="Test response"))
@@ -109,7 +109,7 @@ class TestQueryLLM(unittest.TestCase):
             config=self.test_config
         )
 
-        # Context mesajının kontrolü
+        # Check context message
         call_args = mock_client.chat.completions.create.call_args[1]
         messages = call_args["messages"]
         context_message = next(msg for msg in messages if "My IP address is" in msg["content"])
@@ -119,7 +119,7 @@ class TestQueryLLM(unittest.TestCase):
         self.assertIn("Memory 2", context_message["content"])
 
     async def test_missing_api_url(self):
-        """Eksik API URL testi"""
+        """Missing API URL test"""
         invalid_config = self.test_config.copy()
         del invalid_config['api_url']
 
@@ -132,7 +132,7 @@ class TestQueryLLM(unittest.TestCase):
         self.assertIn("API URL", str(context.exception))
 
     async def test_missing_auth_token(self):
-        """Eksik OpenAI token testi"""
+        """Missing OpenAI token test"""
         invalid_config = self.test_config.copy()
         invalid_config['llm_provider'] = 'openai'
 
@@ -146,7 +146,7 @@ class TestQueryLLM(unittest.TestCase):
 
     @patch('openai.OpenAI')
     async def test_conversation_flow(self, mock_openai):
-        """Konuşma akışı testi"""
+        """Conversation flow test"""
         mock_response = MagicMock()
         mock_response.choices = [
             MagicMock(message=MagicMock(content="Follow-up response"))
@@ -164,7 +164,7 @@ class TestQueryLLM(unittest.TestCase):
             config=self.test_config
         )
 
-        # Mesaj sırasının kontrolü
+        # Check message order
         call_args = mock_client.chat.completions.create.call_args[1]
         messages = call_args["messages"]
         message_contents = [msg["content"] for msg in messages if msg["role"] != "system"]
@@ -173,7 +173,7 @@ class TestQueryLLM(unittest.TestCase):
         self.assertIn("Initial response", message_contents)
         self.assertIn("Follow-up question", message_contents)
         
-        # Sıralama kontrolü
+        # Check ordering
         prompt_idx = message_contents.index("Initial prompt")
         answer_idx = message_contents.index("Initial response")
         prompt2_idx = message_contents.index("Follow-up question")
@@ -182,7 +182,7 @@ class TestQueryLLM(unittest.TestCase):
 
     @patch('openai.OpenAI')
     async def test_error_handling(self, mock_openai):
-        """Hata işleme testi"""
+        """Error handling test"""
         mock_client = MagicMock()
         mock_client.chat.completions.create.side_effect = Exception("API error")
         mock_openai.return_value = mock_client
@@ -196,7 +196,7 @@ class TestQueryLLM(unittest.TestCase):
         self.assertIsNone(response)
 
 def run_tests():
-    """Tüm testleri çalıştır"""
+    """Run all tests"""
     unittest.main()
 
 if __name__ == '__main__':

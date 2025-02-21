@@ -6,16 +6,16 @@ import time
 import coverage
 from typing import List, Type
 
-# Ana dizini Python path'ine ekle
+# Add main directory to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Test modüllerini import et
+# Import test modules
 from test_query import TestQueryLLM
 from test_memory_manager import TestMemoryManager
 from test_execute_response import TestExecuteResponse
 
 class AsyncioTestRunner:
-    """Asenkron testler için özel test koşucusu"""
+    """Custom test runner for asynchronous tests"""
     def __init__(self, test_cases: List[Type[unittest.TestCase]]):
         self.test_cases = test_cases
         self.start_time = None
@@ -26,80 +26,80 @@ class AsyncioTestRunner:
         )
 
     def run_tests(self, verbosity: int = 2, failfast: bool = False) -> unittest.TestResult:
-        """Testleri çalıştır ve sonuçları döndür"""
+        """Run tests and return results"""
         self.start_time = time.time()
         
-        # Coverage ölçümünü başlat
+        # Start coverage measurement
         self.cov.start()
 
-        # Test suite'i oluştur
+        # Create test suite
         loader = unittest.TestLoader()
         suite = unittest.TestSuite()
 
         for test_case in self.test_cases:
             suite.addTests(loader.loadTestsFromTestCase(test_case))
 
-        # Test runner'ı yapılandır
+        # Configure test runner
         runner = unittest.TextTestRunner(
             verbosity=verbosity,
             failfast=failfast
         )
 
-        # Başlangıç bilgisi
+        # Initial information
         total_tests = suite.countTestCases()
         print(f"\n{'='*60}")
-        print(f"Toplam {total_tests} test çalıştırılacak")
+        print(f"Running {total_tests} tests")
         print(f"{'='*60}\n")
 
-        # Testleri çalıştır
+        # Run tests
         result = runner.run(suite)
 
-        # Coverage ölçümünü sonlandır
+        # End coverage measurement
         self.cov.stop()
         self.cov.save()
 
-        # Sonuçları raporla
+        # Report results
         self._print_results(result)
         
         return result
 
     def _print_results(self, result: unittest.TestResult) -> None:
-        """Test sonuçlarını detaylı olarak raporla"""
+        """Report test results in detail"""
         elapsed_time = time.time() - self.start_time
         
         print(f"\n{'='*60}")
-        print("TEST SONUÇLARI")
+        print("TEST RESULTS")
         print(f"{'='*60}")
-        print(f"Toplam süre: {elapsed_time:.2f} saniye")
-        print(f"Çalıştırılan testler: {result.testsRun}")
-        print(f"Başarılı testler: {result.testsRun - len(result.failures) - len(result.errors)}")
-        print(f"Başarısız testler: {len(result.failures)}")
-        print(f"Hatalı testler: {len(result.errors)}")
-        print(f"Atlanan testler: {len(result.skipped)}")
+        print(f"Total time: {elapsed_time:.2f} seconds")
+        print(f"Tests run: {result.testsRun}")
+        print(f"Successful tests: {result.testsRun - len(result.failures) - len(result.errors)}")
+        print(f"Failed tests: {len(result.failures)}")
+        print(f"Error tests: {len(result.errors)}")
+        print(f"Skipped tests: {len(result.skipped)}")
         
-        # Başarısız testlerin detayları
+        # Failed test details
         if result.failures:
             print(f"\n{'='*60}")
-            print("BAŞARISIZ TESTLER")
+            print("FAILED TESTS")
             print(f"{'='*60}")
             for failure in result.failures:
                 print(f"\n{failure[0]}")
                 print(f"{'-'*60}")
                 print(failure[1])
 
-        # Hatalı testlerin detayları
+        # Error test details
         if result.errors:
             print(f"\n{'='*60}")
-            print("HATALI TESTLER")
+            print("ERROR TESTS")
             print(f"{'='*60}")
             for error in result.errors:
                 print(f"\n{error[0]}")
                 print(f"{'-'*60}")
                 print(error[1])
 
-        # Coverage raporu
+        # Coverage report
         print(f"\n{'='*60}")
-        print("KAPSAM RAPORU")
+        print("COVERAGE REPORT")
         print(f"{'='*60}")
         self.cov.report()
 
@@ -109,45 +109,45 @@ def run_tests(
     pattern: str = 'test*.py'
 ) -> None:
     """
-    Ana test çalıştırma fonksiyonu
+    Main test running function
     
     Args:
-        verbosity: Test çıktı detay seviyesi (1-3)
-        failfast: İlk hatada durma seçeneği
-        pattern: Test dosyası eşleşme kalıbı
+        verbosity: Test output detail level (1-3)
+        failfast: Stop on first failure option
+        pattern: Test file matching pattern
     """
-    # Test sınıflarını tanımla
+    # Define test classes
     test_cases = [
         TestQueryLLM,
         TestMemoryManager,
         TestExecuteResponse
     ]
 
-    # Test koşucusunu oluştur ve çalıştır
+    # Create and run test runner
     runner = AsyncioTestRunner(test_cases)
     result = runner.run_tests(
         verbosity=verbosity,
         failfast=failfast
     )
 
-    # Başarısızlık durumunda programı sonlandır
+    # Exit on failure
     if not result.wasSuccessful():
         sys.exit(1)
 
 if __name__ == '__main__':
-    # Komut satırı argümanlarını işle
+    # Parse command line arguments
     import argparse
-    parser = argparse.ArgumentParser(description='Test koşucusu')
+    parser = argparse.ArgumentParser(description='Test runner')
     parser.add_argument('-v', '--verbosity', type=int, default=2,
-                      help='Çıktı detay seviyesi (1-3)')
+                      help='Output detail level (1-3)')
     parser.add_argument('-f', '--failfast', action='store_true',
-                      help='İlk hatada dur')
+                      help='Stop on first failure')
     parser.add_argument('-p', '--pattern', default='test*.py',
-                      help='Test dosyası eşleşme kalıbı')
+                      help='Test file matching pattern')
     
     args = parser.parse_args()
     
-    # Testleri çalıştır
+    # Run tests
     run_tests(
         verbosity=args.verbosity,
         failfast=args.failfast,

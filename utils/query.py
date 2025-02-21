@@ -22,19 +22,19 @@ async def query_llm(
     system_prompt: str = ""
 ) -> Optional[Dict[str, Any]]:
     """
-    LM Studio veya OpenAI API kullanarak sorgu gönderir
+    Sends a query using LM Studio or OpenAI API
     
     Args:
-        prompt: Ana sorgu metni
-        answer: Önceki yanıt (opsiyonel)
-        prompt2: İkinci sorgu metni (opsiyonel) 
-        system_ip: Sistem IP adresi
-        model: Kullanılacak model
-        memory_vectors: Bellek vektörleri (kullanılmıyor)
-        config: Yapılandırma ayarları
+        prompt: Main query text
+        answer: Previous response (optional)
+        prompt2: Second query text (optional)
+        system_ip: System IP address
+        model: Model to be used
+        memory_vectors: Memory vectors (not used)
+        config: Configuration settings
 
     Returns:
-        Yanıt sözlüğü veya None (hata durumunda)
+        Response dictionary or None (in case of error)
     """
     start_time = time.time()
     config_manager = get_config_manager()
@@ -42,26 +42,26 @@ async def query_llm(
     print(json.dumps(memory_vectors, indent=2))
     
     try:
-        # Yapılandırma değerlerini al
+        # Get configuration values
         provider = config.get("llm_provider") or config_manager.get_config("llm_provider", "lm_studio")
         api_url = config.get("api_url") or config_manager.get_config("api_url")
         
         if not api_url:
-            raise ValueError("API URL yapılandırılmamış")
+            raise ValueError("API URL not configured")
 
-        # OpenAI için kimlik doğrulama gerekiyor
+        # Authentication required for OpenAI
         if provider == "openai":
             auth_token = config.get("auth_token") or config_manager.get_config("auth_token")
             if not auth_token:
-                raise ValueError("OpenAI için kimlik doğrulama token'ı gerekli")
+                raise ValueError("Authentication token required for OpenAI")
             openai.api_key = auth_token
         
-        # Diğer yapılandırma değerlerini al
+        # Get other configuration values
         temperature = float(config.get("temperature", config_manager.get_config("temperature", 0.7)))
         max_tokens = int(config.get("max_tokens", config_manager.get_config("max_tokens", 2000)))
         model_name = config_manager.get_config("model", model)
 
-        # Mesajları OpenAI formatında oluştur
+        # Create messages in OpenAI format
         messages: List[ChatCompletionMessageParam] = []
 
 
@@ -69,9 +69,13 @@ async def query_llm(
         
         # Context
         _datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        memory_context = "".join([f"<memory>{m}</memory>" for m in memory_vectors])
+
         context = f"""
 My IP address is {system_ip} and the current time is {_datetime}.
-{memory_vectors if memory_vectors else ""}
+<memories>
+{memory_context}
+</memories>
         """
         messages.append({"role": "user", "content": context})
             
@@ -81,27 +85,27 @@ My IP address is {system_ip} and the current time is {_datetime}.
         if prompt2:
             messages.append({"role": "user", "content": prompt2})
 
-        # OpenAI client yapılandırması
+        # OpenAI client configuration
         client = openai.OpenAI(
             api_key=auth_token if provider == "openai" else "lm-studio",
             base_url=api_url
         )
 
-        # Sorguyu gönder
+        # Send query
         completion_args = {
             "model": model_name,
             "messages": messages,
             "temperature": temperature
         }
         
-        # max_tokens parametresini sadece OpenAI provider'ı olmadığında ekle
+        # Add max_tokens parameter only when provider is not OpenAI
         if provider != "openai":
             completion_args["max_tokens"] = max_tokens
             response: ChatCompletion = client.chat.completions.create(**completion_args)
         else:
             response: ChatCompletion = client.chat.completions.create(**completion_args)
 
-        # Yanıtı uygun formata dönüştür
+        # Convert response to appropriate format
         result = {
             "choices": [{
                 "message": {
@@ -113,13 +117,13 @@ My IP address is {system_ip} and the current time is {_datetime}.
         print(json.dumps(result, indent=2))
 
         elapsed_time = round(time.time() - start_time, 2)
-        logger.info(f"LLM yanıt süresi: {elapsed_time} saniye")
+        logger.info(f"LLM response time: {elapsed_time} seconds")
         
         return result
 
     except Exception as e:
         elapsed_time = round(time.time() - start_time, 2)
-        logger.error(f"query_llm'de hata: {e}, süre: {elapsed_time} saniye")
+        logger.error(f"Error in query_llm: {e}, time: {elapsed_time} seconds")
         return None
 
 # Export

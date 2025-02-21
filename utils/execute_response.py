@@ -1,16 +1,14 @@
 import json
-import subprocess
 import webbrowser
-from typing import Dict, List, Optional, Any, Tuple, Coroutine
-import os
+from typing import Dict, Optional, Any, Tuple
 import asyncio
-from urllib.parse import urlparse
 from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
 from utils.logger import get_logger
 import utils.tool_utils as tool_utils
 from utils.query import query_llm
 from utils.index import outputCleaner
+import re
 
 logger = get_logger()
 
@@ -52,8 +50,8 @@ def is_command_allowed(cmd_type: str, command: str) -> bool:
 @lru_cache(maxsize=1000)
 def is_domain_allowed(url: str) -> bool:
     """Check if domain is in allowed list"""
-    parsed_url = urlparse(url)
-    return parsed_url.netloc.lower() in ALLOWED_DOMAINS
+    domain = re.compile(r"https?://(?:www\.)?([a-zA-Z0-9.-]+)").search(url)
+    return domain and domain.group(1) in ALLOWED_DOMAINS
 
 async def execute_shell_command(command: str, timeout: int = 5) -> Tuple[bool, str]:
     """Execute shell command asynchronously"""
@@ -192,6 +190,7 @@ async def process_second_response(
         for key in ["temperature", "max_tokens", "timeout"]
         if config_manager.get_config(key) is not None
     })
+
     """Process second response"""
     try:
         second_response = await query_llm(
@@ -247,11 +246,12 @@ async def execute_response(
     Execute AI response asynchronously
     
     Args:
-        response_text: AI response
-        user_input: User input
-        context: Context information
-        model: Model to use
-        config: Configuration settings
+        response_text: AI response text
+        user_input: Original user input
+        context: Context information and settings
+        model: Model identifier
+        config: Additional configuration parameters
+        isFromExecuteResponseSecond: Flag for recursive execution
     
     Returns:
         Processed response text

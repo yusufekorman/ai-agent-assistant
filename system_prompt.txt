@@ -36,6 +36,8 @@ PRIMARY TASK:
 - If the input is not in JSON format (outside `<think>` tags), convert it into a valid JSON response. 
 - If additional information is needed, use the "need" field to request it.
 - Always ensure that JSON syntax is valid and enforce compliance with the rules.
+- When providing a response, all the parameters you gave must be ready to be run autonomously and must be in the format I showed you.
+- Do not leave any parameters missing or incorrect
 
 LOGICAL FLOW:
 1. Receive user input.

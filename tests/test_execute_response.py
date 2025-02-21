@@ -6,7 +6,7 @@ from utils.execute_response import execute_response, handle_system_command, hand
 
 class TestExecuteResponse(unittest.TestCase):
     def setUp(self):
-        """Her test öncesi çalışacak kurulum"""
+        """Setup to run before each test"""
         self.test_config = {
             'llm_model': 'llama-3.2-3b-instruct',
             'temperature': 0.7,
@@ -22,12 +22,12 @@ class TestExecuteResponse(unittest.TestCase):
         }
 
     def run_async(self, coroutine):
-        """Asenkron fonksiyonu senkron olarak çalıştır"""
+        """Run asynchronous function synchronously"""
         return asyncio.run(coroutine)
 
     @patch('utils.tool_utils.get_weather')
     async def test_weather_need_request(self, mock_weather):
-        """Hava durumu need request testi"""
+        """Weather need request test"""
         mock_weather.return_value = "Weather: 20°C, Clear sky"
         
         response_text = json.dumps({
@@ -49,7 +49,7 @@ class TestExecuteResponse(unittest.TestCase):
 
     @patch('utils.tool_utils.get_news')
     async def test_news_need_request(self, mock_news):
-        """Haber need request testi"""
+        """News need request test"""
         mock_news.return_value = "Latest news: Test headline"
         
         response_text = json.dumps({
@@ -71,7 +71,7 @@ class TestExecuteResponse(unittest.TestCase):
 
     @patch('utils.tool_utils.search_wikipedia')
     async def test_wiki_need_request(self, mock_wiki):
-        """Wikipedia need request testi"""
+        """Wikipedia need request test"""
         mock_wiki.return_value = "Wikipedia summary: Test article"
         
         response_text = json.dumps({
@@ -92,7 +92,7 @@ class TestExecuteResponse(unittest.TestCase):
         mock_wiki.assert_called_once_with("Artificial Intelligence")
 
     async def test_handle_system_command_allowed(self):
-        """İzin verilen sistem komutu testi"""
+        """Allowed system command test"""
         cmd_type = "cmd"
         command = "echo test"
         
@@ -100,7 +100,7 @@ class TestExecuteResponse(unittest.TestCase):
         self.assertIsInstance(result, str)
 
     async def test_handle_system_command_denied(self):
-        """İzin verilmeyen sistem komutu testi"""
+        """Denied system command test"""
         cmd_type = "cmd"
         command = "rm -rf /"
         
@@ -109,7 +109,7 @@ class TestExecuteResponse(unittest.TestCase):
 
     @patch('webbrowser.open')
     async def test_handle_browser_command(self, mock_browser):
-        """Tarayıcı komutu testi"""
+        """Browser command test"""
         mock_browser.return_value = True
         
         url = "https://www.example.com"
@@ -118,7 +118,7 @@ class TestExecuteResponse(unittest.TestCase):
         mock_browser.assert_called_once_with(url)
 
     async def test_invalid_json_response(self):
-        """Geçersiz JSON yanıtı testi"""
+        """Invalid JSON response test"""
         response_text = "Invalid JSON"
         
         response = await execute_response(
@@ -132,7 +132,7 @@ class TestExecuteResponse(unittest.TestCase):
         self.assertIn("Invalid response format", response)
 
     async def test_empty_response(self):
-        """Boş yanıt testi"""
+        """Empty response test"""
         response_text = json.dumps({
             "response": "",
             "need": "",
@@ -151,7 +151,7 @@ class TestExecuteResponse(unittest.TestCase):
 
     @patch('asyncio.create_subprocess_shell')
     async def test_system_command_timeout(self, mock_subprocess):
-        """Sistem komutu zaman aşımı testi"""
+        """System command timeout test"""
         mock_process = AsyncMock()
         mock_process.communicate = AsyncMock(side_effect=asyncio.TimeoutError())
         mock_subprocess.return_value = mock_process
@@ -173,7 +173,7 @@ class TestExecuteResponse(unittest.TestCase):
         self.assertIn("Command execution timed out", response)
 
     async def test_invalid_need_format(self):
-        """Geçersiz need format testi"""
+        """Invalid need format test"""
         response_text = json.dumps({
             "response": "Testing",
             "need": "invalid_format",
@@ -191,7 +191,7 @@ class TestExecuteResponse(unittest.TestCase):
         self.assertIn("Invalid need format", response)
 
 def run_async_tests():
-    """Asenkron testleri çalıştır"""
+    """Run asynchronous tests"""
     async def run_all_tests():
         test_instance = TestExecuteResponse()
         test_instance.setUp()
@@ -208,7 +208,7 @@ def run_async_tests():
     asyncio.run(run_all_tests())
 
 def run_tests():
-    """Tüm testleri çalıştır"""
+    """Run all tests"""
     unittest.main()
 
 if __name__ == '__main__':
