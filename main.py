@@ -1,3 +1,4 @@
+import json
 import pyttsx3
 from RealtimeSTT import AudioToTextRecorder
 import asyncio
@@ -19,6 +20,7 @@ engine.setProperty('voice', engine.getProperty('voices')[0].id)
 # Initialize memory manager
 memory_manager = MemoryManager()
 
+# Read system prompt
 with open("system_prompt.txt", "r") as file:
     system_prompt = file.read()
 
@@ -26,6 +28,14 @@ with open("system_prompt.txt", "r") as file:
 system_ip = None
 input_mode = 1  # Default to text input
 
+# Tools that need AI processing of their results
+DYNAMIC_TOOLS = [
+    "get_weather",
+    "search_wikipedia",
+    "get_news"
+]
+
+# Load configuration
 with open("config.yaml", "r") as file:
     config = yaml.safe_load(file)
 
@@ -63,6 +73,31 @@ def say(text):
     engine.say(text)
     engine.runAndWait()
 
+async def process_tool_result(tool_name: str, result: str, user_input: str):
+    """Process tool result through AI if needed"""
+    if tool_name in DYNAMIC_TOOLS:
+        ai_response = await query_llm(
+            prompt=user_input,
+            answer=result,  # Pass the tool result as context
+            system_ip=system_ip or "unknown",
+            config=config,
+            model=config.get('llm_model', 'gpt-3.5-turbo'),
+            system_prompt=system_prompt
+        )
+        if ai_response:
+            response = await execute_response(
+                ai_response,
+                user_input,
+                {
+                    "secrets": secrets,
+                    "system_ip": system_ip or "unknown",
+                },
+                model=config.get('llm_model', 'gpt-3.5-turbo'),
+                config=config
+            )
+            return response if response else result
+    return result
+
 async def handleAI(user_input):
     # Process input and get AI response
     top5_memoryVectors = memory_manager.searchInMemoryVector(user_input)
@@ -73,23 +108,27 @@ async def handleAI(user_input):
         memory_vectors=top5_memoryVectors,
         system_ip=system_ip or "unknown",
         config=config,
-        model=config.get('llm_model', 'llama-3.2-3b-instruct'),
+        model=config.get('llm_model', 'gpt-3.5-turbo'),
         system_prompt=system_prompt
     )
 
     # Handle AI response
-    if ai_response and "choices" in ai_response:
-        ai_response = ai_response["choices"][0]["message"]["content"]
-
-        ai_response = outputCleaner(ai_response)
-        
-        response = await execute_response(ai_response, user_input, {
-            "secrets": secrets,
-            "system_ip": system_ip or "unknown",
-        }, model=config.get('llm_model', 'llama-3.2-3b-instruct'), config=config)
-        say(response)
+    if ai_response:
+        response = await execute_response(
+            ai_response,
+            user_input,
+            {
+                "secrets": secrets,
+                "system_ip": system_ip or "unknown",
+            },
+            model=config.get('llm_model', 'gpt-3.5-turbo'),
+            config=config,
+            dynamic_tools=DYNAMIC_TOOLS  # Pass the dynamic tools list
+        )
+        if response:
+            say(response)
     else:
-        print("AI did not respond or returned an invalid response.")
+        print("Failed to get response from AI.")
 
 async def main():
     try:
@@ -117,9 +156,12 @@ async def main():
                     await handleAI(user_input)
                 else:
                     print("Wait until it says 'say jarvis' before speaking.")
-                    recorder = AudioToTextRecorder(model=config.get("whisper_model_type", "base"), 
-                                                wake_words=config.get("wake_words", ["jarvis"]), 
-                                                language="en", input_device_index=choice-1)
+                    recorder = AudioToTextRecorder(
+                        model=config.get("whisper_model_type", "base"), 
+                        wake_words=config.get("wake_words", ["jarvis"]), 
+                        language="en",
+                        input_device_index=choice-1
+                    )
                     await handleAI(recorder.text())
             except KeyboardInterrupt:
                 print("\nShutting down program...")

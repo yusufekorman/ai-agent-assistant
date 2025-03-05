@@ -11,72 +11,142 @@ import json
 
 logger = get_logger()
 
+# Define available tools/functions
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "Get weather forecast for a city",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "city": {
+                        "type": "string",
+                        "description": "The city to get weather for"
+                    }
+                },
+                "required": ["city"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_wikipedia",
+            "description": "Search Wikipedia for information",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The search query"
+                    }
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_news",
+            "description": "Get news articles about a topic",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The news topic to search for"
+                    }
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "execute_command",
+            "description": "Execute a system command",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "command_type": {
+                        "type": "string",
+                        "enum": ["cmd", "ps"],
+                        "description": "Type of command (cmd or ps)"
+                    },
+                    "command": {
+                        "type": "string",
+                        "description": "The command to execute"
+                    }
+                },
+                "required": ["command_type", "command"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "open_browser",
+            "description": "Open a URL in the default browser",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "The URL to open"
+                    }
+                },
+                "required": ["url"]
+            }
+        }
+    }
+]
+
 async def query_llm(
     prompt: str,
     answer: Optional[str] = None,
     prompt2: Optional[str] = None,
     system_ip: str = "",
-    model: str = "llama-3.2-3b-instruct",
+    model: str = "gpt-3.5-turbo",
     memory_vectors: List[str] = [],
     config: Dict[str, Any] = {},
     system_prompt: str = ""
 ) -> Optional[Dict[str, Any]]:
     """
-    Sends a query using LM Studio or OpenAI API
-    
-    Args:
-        prompt: Main query text
-        answer: Previous response (optional)
-        prompt2: Second query text (optional)
-        system_ip: System IP address
-        model: Model to be used
-        memory_vectors: Memory vectors (not used)
-        config: Configuration settings
-
-    Returns:
-        Response dictionary or None (in case of error)
+    Sends a query using OpenAI API with tool/function calling support
     """
     start_time = time.time()
     config_manager = get_config_manager()
 
-    print(json.dumps(memory_vectors, indent=2))
-    
     try:
         # Get configuration values
-        provider = config.get("llm_provider") or config_manager.get_config("llm_provider", "lm_studio")
+        provider = config.get("llm_provider") or config_manager.get_config("llm_provider", "openai")
         api_url = config.get("api_url") or config_manager.get_config("api_url")
         
         if not api_url:
             raise ValueError("API URL not configured")
 
-        # Authentication required for OpenAI
-        if provider == "openai":
-            auth_token = config.get("auth_token") or config_manager.get_config("auth_token")
-            if not auth_token:
-                raise ValueError("Authentication token required for OpenAI")
-            openai.api_key = auth_token
+        # Authentication for OpenAI
+        auth_token = config.get("auth_token") or config_manager.get_config("auth_token")
+        if not auth_token:
+            raise ValueError("Authentication token required for OpenAI")
+        openai.api_key = auth_token
         
         # Get other configuration values
         temperature = float(config.get("temperature", config_manager.get_config("temperature", 0.7)))
-        max_tokens = int(config.get("max_tokens", config_manager.get_config("max_tokens", 2000)))
         model_name = config_manager.get_config("model", model)
 
-        # Create messages in OpenAI format
+        # Create messages
         messages: List[ChatCompletionMessageParam] = []
-
-
         messages.append({"role": "system", "content": system_prompt})
         
-        # Context
+        # Add context
         _datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         memory_context = "".join([f"<memory>{m}</memory>" for m in memory_vectors])
-
-        context = f"""
-My IP address is {system_ip} and the current time is {_datetime}.
-<memories>
-{memory_context}
-</memories>
-        """
+        context = f"My IP address is {system_ip} and the current time is {_datetime}.\n<memories>\n{memory_context}\n</memories>"
         messages.append({"role": "user", "content": context})
             
         messages.append({"role": "user", "content": prompt})
@@ -87,39 +157,23 @@ My IP address is {system_ip} and the current time is {_datetime}.
 
         # OpenAI client configuration
         client = openai.OpenAI(
-            api_key=auth_token if provider == "openai" else "lm-studio",
+            api_key=auth_token,
             base_url=api_url
         )
 
-        # Send query
-        completion_args = {
-            "model": model_name,
-            "messages": messages,
-            "temperature": temperature
-        }
-        
-        # Add max_tokens parameter only when provider is not OpenAI
-        if provider != "openai":
-            completion_args["max_tokens"] = max_tokens
-            response: ChatCompletion = client.chat.completions.create(**completion_args)
-        else:
-            response: ChatCompletion = client.chat.completions.create(**completion_args)
-
-        # Convert response to appropriate format
-        result = {
-            "choices": [{
-                "message": {
-                    "content": response.choices[0].message.content
-                }
-            }]
-        }
-
-        print(json.dumps(result, indent=2))
+        # Send query with tools/functions
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=messages,
+            temperature=temperature,
+            tools=TOOLS,
+            tool_choice="auto"
+        )
 
         elapsed_time = round(time.time() - start_time, 2)
         logger.info(f"LLM response time: {elapsed_time} seconds")
         
-        return result
+        return response
 
     except Exception as e:
         elapsed_time = round(time.time() - start_time, 2)

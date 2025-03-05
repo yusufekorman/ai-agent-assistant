@@ -11,14 +11,25 @@ An intelligent AI assistant built in Python that provides seamless interaction t
   - Text-to-speech output using pyttsx3
 
 - **Advanced AI Integration**
-  - Multiple LLM providers supported:
-    - LM Studio (Local LLMs)
-    - OpenAI
-  - Asynchronous request handling with timeout and retry mechanisms
+  - OpenAI's function calling API integration
+  - Dynamic tool result processing
+  - Asynchronous request handling
   - Context-aware responses using vector embeddings
   - Advanced memory management with SQLite backend
   - Multi-turn conversation support
   - Configurable model parameters (temperature, max_tokens)
+
+- **Tool System**
+  - Function calling based tool execution
+  - Dynamic tool result processing for natural responses
+  - Built-in tools:
+    - Weather information (OpenWeatherMap)
+    - Wikipedia knowledge access
+    - News updates
+    - System command execution
+    - Browser control
+  - Secure execution with allowlists
+  - Automatic result refinement through AI
 
 - **Memory Management System**
   - Vector-based conversation storage using spaCy
@@ -36,16 +47,11 @@ An intelligent AI assistant built in Python that provides seamless interaction t
   - Error handling and logging
   - Timeout controls for commands
 
-- **API Integrations**
-  - Weather information (OpenWeatherMap)
-  - Wikipedia knowledge access
-  - Real-time news updates
-  - Stock market data (yfinance)
-
 ## 🔧 Technical Requirements
 
 - Python 3.8 or higher
 - Required Python packages:
+  - OpenAI SDK
   - PyTorch (with CUDA support)
   - spaCy (with en_core_web_md model)
   - transformers
@@ -82,18 +88,18 @@ python -m spacy download en_core_web_md
 Create a `config.yaml` file in the root directory:
 ```yaml
 config:
-  - llm_provider: 'lm_studio'  # Available: lm_studio, ollama, gpt, deepseek
-  - model: 'llama-3.2-3b-instruct'  # Model name for selected provider
-  - api_url: 'http://localhost:1234/v1/chat/completions'  # API endpoint URL
+  - llm_provider: 'openai'
+  - model: 'gpt-4o-mini'
+  - api_url: 'https://api.openai.com/v1'
   - whisper_model_type: 'base'
   - wake_words: 'jarvis'
-  - auth_token: ''  # Required for openai provider
-  - temperature: 0.7  # Model temperature (0-1)
-  - max_tokens: 2000  # Maximum tokens in response
-  - batch_size: 100  # Size of processing batches
-  - max_vectors: 1000  # Maximum vectors in memory
-  - auto_save: true  # Enable auto-saving
-  - timeout: 30  # Request timeout in seconds
+  - auth_token: 'your_openai_api_key'
+  - temperature: 0.7
+  - max_tokens: 2000
+  - batch_size: 100
+  - max_vectors: 1000
+  - auto_save: true
+  - timeout: 30
 secrets:
   - weather_api_key: 'your_openweathermap_api_key'
   - news_api_key: 'your_newsapi_key'
@@ -111,15 +117,23 @@ python main.py
 - Enter `2` for voice input mode with wake word "Jarvis"
   - Select your microphone from the list
 
-3. **Available Commands**
+3. **Available Tools**
 - Weather queries: "What's the weather like in London?"
 - Knowledge queries: "Tell me about quantum computing"
 - News updates: "Show me the latest news about technology"
 - System commands (Restricted): 
-  - Windows: "cmd:notepad", "ps:Get-Date"
-  - Browser: "open_browser:https://google.com"
+  - Windows: "Show me running processes", "What's the current time?"
+- Browser: "Open GitHub website"
 
 ## 📋 System Architecture
+
+### Tool System
+The application uses OpenAI's function calling API for tool execution:
+- Function definitions for each tool capability
+- Dynamic tool result processing
+- Natural language refinement of tool outputs
+- Secure execution with allowlists
+- Error handling and timeouts
 
 ### Memory Management
 The application uses an advanced vector-based memory system:
@@ -131,16 +145,17 @@ The application uses an advanced vector-based memory system:
 - Thread-safe operations
 
 ### Query System
-Asynchronous query handling system:
-- Multiple LLM provider support
-- Timeout and retry mechanisms
+Function calling based query handling:
+- OpenAI API integration
+- Tool execution framework
 - Context injection for better responses
 - Memory vector integration
-- Custom response formatting
+- Dynamic response processing
 
 ### Response Execution
-Secure command execution system:
-- Allowlist-based command filtering
+Secure tool execution system:
+- Function calling based execution
+- Allowlist-based filtering
 - Domain-restricted URL handling
 - Asynchronous execution
 - Timeout controls
@@ -167,7 +182,7 @@ ai-agent-assistant/
 │   ├── test_memory_manager.py
 │   └── test_query.py
 ├── utils/              # Core utilities
-│   ├── execute_response.py  # Response execution
+│   ├── execute_response.py  # Tool execution
 │   ├── query.py            # LLM interaction
 │   ├── memory_manager.py   # Vector store
 │   ├── tool_utils.py       # API utilities
@@ -183,7 +198,7 @@ Comprehensive test suite included:
 - Unit tests for core components
 - Integration tests for API interactions
 - Memory management tests
-- Command execution tests
+- Tool execution tests
 - Configuration tests
 
 Run tests with:

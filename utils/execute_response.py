@@ -1,18 +1,15 @@
 import json
 import webbrowser
-from typing import Dict, Optional, Any, Tuple
+from typing import Dict, Optional, Any, Tuple, List
 import asyncio
 from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
 from utils.logger import get_logger
 import utils.tool_utils as tool_utils
-from utils.query import query_llm
-from utils.index import outputCleaner
-import re
 
 logger = get_logger()
 
-# Define safe command and domain lists as tuples (immutable and faster)
+# Define safe command and domain lists
 ALLOWED_COMMANDS = {
     'cmd': tuple([
         'taskmgr', 'calc', 'notepad', 'mspaint', 'ipconfig', 'dir',
@@ -50,6 +47,7 @@ def is_command_allowed(cmd_type: str, command: str) -> bool:
 @lru_cache(maxsize=1000)
 def is_domain_allowed(url: str) -> bool:
     """Check if domain is in allowed list"""
+    import re
     domain = re.compile(r"https?://(?:www\.)?([a-zA-Z0-9.-]+)").search(url)
     return domain and domain.group(1) in ALLOWED_DOMAINS
 
@@ -97,216 +95,103 @@ async def execute_powershell_command(command: str, timeout: int = 5) -> Tuple[bo
         logger.error(f"PowerShell command execution error: {e}")
         return False, str(e)
 
-async def handle_system_command(cmd_type: str, command: str) -> Optional[str]:
-    """Handle system command"""
-    if not is_command_allowed(cmd_type, command):
-        return f"Command '{command}' cannot be executed due to security restrictions."
-
-    success, output = await (
-        execute_shell_command(command) if cmd_type == "cmd"
-        else execute_powershell_command(command)
-    )
-
-    if success:
-        logger.info(f"Command executed successfully: {command}")
-        return output
-    else:
-        logger.error(f"Command execution failed: {output}")
-        return f"Command error: {output}"
-
-async def handle_browser_command(url: str) -> Optional[str]:
-    """Handle browser command"""
-
-    if not is_domain_allowed(url):
-        return f"URL '{url}' cannot be opened due to security restrictions."
-
+async def handle_tool_call(tool_call: Any, context: Dict[str, Any], user_input: str) -> Tuple[str, str]:
+    """
+    Handle tool/function calls from OpenAI API
+    Returns: Tuple of (tool_name, result)
+    """
     try:
-        # Run browser open operation in thread pool
-        with ThreadPoolExecutor() as executor:
-            await asyncio.get_event_loop().run_in_executor(
-                executor,
-                webbrowser.open,
-                url
-            )
-        return None
-    except Exception as e:
-        logger.error(f"Browser command error: {e}")
-        return f"URL opening error: {str(e)}"
+        function_name = tool_call.function.name
+        arguments = json.loads(tool_call.function.arguments)
 
-async def handle_need_request(
-    need_type: str,
-    query: str,
-    context: Dict[str, Any]
-) -> Optional[str]:
-    """Handle need requests asynchronously"""
-    try:
-        if need_type == "input":
-            # Run input operation in thread pool
-            with ThreadPoolExecutor() as executor:
-                user_input = await asyncio.get_event_loop().run_in_executor(
-                    executor,
-                    input,
-                    query
-                )
-            return f"<user_input>{user_input}</user_input>"
-
-        # Run API calls in parallel
-        if need_type == "weather_forecast":
-            return await tool_utils.get_weather(
-                query,
+        if function_name == "get_weather":
+            result = await tool_utils.get_weather(
+                arguments["city"],
                 context["secrets"].get("weather_api_key")
             )
-        elif need_type == "wiki":
-            return await tool_utils.search_wikipedia(query)
-        elif need_type == "news":
-            return await tool_utils.get_news(
-                query,
+            return function_name, result
+
+        elif function_name == "search_wikipedia":
+            result = await tool_utils.search_wikipedia(arguments["query"])
+            return function_name, result
+
+        elif function_name == "get_news":
+            result = await tool_utils.get_news(
+                arguments["query"],
                 context["secrets"].get("news_api_key")
             )
+            return function_name, result
 
-        return None
+        elif function_name == "execute_command":
+            if not is_command_allowed(arguments["command_type"], arguments["command"]):
+                return function_name, f"Command '{arguments['command']}' cannot be executed due to security restrictions."
 
-    except Exception as e:
-        logger.error(f"Error handling need request: {e}")
-        return None
+            success, output = await (
+                execute_shell_command(arguments["command"]) 
+                if arguments["command_type"] == "cmd"
+                else execute_powershell_command(arguments["command"])
+            )
 
-async def process_second_response(
-    response_text: str,
-    user_input: str,
-    context: Dict[str, Any],
-    model: Optional[str],
-    config: Dict[str, Any]
-) -> str:
-    from utils.config_manager import get_config_manager
-    config_manager = get_config_manager()
+            if success:
+                logger.info(f"Command executed successfully: {arguments['command']}")
+                return function_name, output
+            else:
+                logger.error(f"Command execution failed: {output}")
+                return function_name, f"Command error: {output}"
 
-    # Use provided model or get from config
-    model_name = model if model else config_manager.get_config("model", "llama-3.2-3b-instruct")
-    
-    # Update API configuration
-    current_config = config.copy()
-    current_config.update({
-        key: config_manager.get_config(key)
-        for key in ["temperature", "max_tokens", "timeout"]
-        if config_manager.get_config(key) is not None
-    })
+        elif function_name == "open_browser":
+            if not is_domain_allowed(arguments["url"]):
+                return function_name, f"URL '{arguments['url']}' cannot be opened due to security restrictions."
 
-    """Process second response"""
-    try:
-        second_response = await query_llm(
-            prompt=user_input,
-            answer=response_text,
-            system_ip=context.get("system_ip", "unknown"),
-            config=current_config,
-            model=str(model_name)  # Convert to str for type safety
-        )
-
-        if second_response and "choices" in second_response:
-            response = second_response["choices"][0]["message"]["content"]
-            response = outputCleaner(response)
             try:
-                response = await execute_response(
-                    response,
-                    user_input,
-                    context,
-                    model,
-                    isFromExecuteResponseSecond=True
-                )
-            except json.JSONDecodeError:
-                pass
-            return response
+                with ThreadPoolExecutor() as executor:
+                    await asyncio.get_event_loop().run_in_executor(
+                        executor,
+                        webbrowser.open,
+                        arguments["url"]
+                    )
+                return function_name, "Browser opened successfully"
+            except Exception as e:
+                logger.error(f"Browser command error: {e}")
+                return function_name, f"URL opening error: {str(e)}"
+
+        return function_name, f"Unknown tool: {function_name}"
 
     except Exception as e:
-        logger.error(f"Error processing second response: {e}")
-
-    return response_text
+        logger.error(f"Error handling tool call: {e}")
+        return "unknown", f"Tool execution error: {str(e)}"
 
 async def execute_response(
-    response_text: str,
+    llm_response: Any,
     user_input: str,
     context: Dict[str, Any],
     model: Optional[str] = None,
     config: Dict[str, Any] = {},
-    isFromExecuteResponseSecond: bool = False
+    dynamic_tools: Optional[List[str]] = None
 ) -> str:
-    from utils.config_manager import get_config_manager
-    config_manager = get_config_manager()
-
-    # Get configuration values
-    model = config_manager.get_config("model", model)
+    """Execute AI response with OpenAI function calling support"""
+    from main import process_tool_result  # Import here to avoid circular dependency
     
-    # Add API keys to context
-    if "secrets" not in context:
-        context["secrets"] = {}
-    context["secrets"].update({
-        "weather_api_key": config.get("weather_api_key") or config_manager.get_secret("weather_api_key"),
-        "news_api_key": config.get("news_api_key") or config_manager.get_secret("news_api_key")
-    })
-    """
-    Execute AI response asynchronously
-    
-    Args:
-        response_text: AI response text
-        user_input: Original user input
-        context: Context information and settings
-        model: Model identifier
-        config: Additional configuration parameters
-        isFromExecuteResponseSecond: Flag for recursive execution
-    
-    Returns:
-        Processed response text
-    """
     try:
-        # Parse response
-        response_data = json.loads(response_text)
-        response = response_data.get("response", "")
-        need = response_data.get("need", "")
-        commands = response_data.get("commands", "")
+        # Check for tool calls
+        if hasattr(llm_response.choices[0].message, 'tool_calls') and llm_response.choices[0].message.tool_calls:
+            for tool_call in llm_response.choices[0].message.tool_calls:
+                # Get tool result
+                tool_name, result = await handle_tool_call(tool_call, context, user_input)
+                
+                # If this is a dynamic tool, process the result through AI
+                if dynamic_tools and tool_name in dynamic_tools:
+                    return await process_tool_result(tool_name, result, user_input)
+                
+                return result
 
-        # Process need requests
-        if need:
-            try:
-                need_type, query = need.split(":", 1)
-                need_response = await handle_need_request(need_type, query, context)
+        # If we have content, return it
+        if hasattr(llm_response.choices[0].message, 'content') and llm_response.choices[0].message.content:
+            return llm_response.choices[0].message.content
 
-                if need_response and not isFromExecuteResponseSecond:
-                    response = await process_second_response(
-                        response_text,
-                        user_input,
-                        context,
-                        model,
-                        config
-                    )
-                elif need_response:
-                    response = need_response
+        # Default empty response
+        return ""
 
-            except ValueError:
-                logger.error("Invalid need format")
-                return "Error: Invalid need format"
-
-        # Process system commands
-        if commands:
-            parts = commands.split(":", 1)
-            if len(parts) != 2:
-                return "Error: Invalid command format"
-
-            cmd_type, command = parts
-
-            if cmd_type in ["cmd", "ps"]:
-                output = await handle_system_command(cmd_type, command)
-                if output:
-                    response += f"\n{output}"
-
-            elif cmd_type == "open_browser":
-                output = await handle_browser_command(command)
-                if output:
-                    response += f"\n{output}"
-
-        return response
-
-    except json.JSONDecodeError:
-        logger.error("Invalid response format")
-        return "Error: Invalid response format"
     except Exception as e:
         logger.error(f"Response processing error: {e}")
         return f"Response processing error: {str(e)}"
@@ -314,7 +199,5 @@ async def execute_response(
 # Export
 export = {
     "execute_response": execute_response,
-    "handle_system_command": handle_system_command,
-    "handle_browser_command": handle_browser_command,
-    "handle_need_request": handle_need_request
+    "handle_tool_call": handle_tool_call
 }
