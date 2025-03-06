@@ -242,37 +242,10 @@ async def get_news(query: str, api_key: Optional[str]) -> str:
         logger.error(f"News API error: {e}")
         return f"Error getting news data: {str(e)}"
 
-async def read_notes(config: Dict[str, Any] = {}) -> str:
-    """Read note files"""
-    try:
-        path = config.get("notes_path", "C:/notes")
-        if not os.path.exists(path):
-            return json.dumps([])
-            
-        notes = []
-        for file in os.listdir(path):
-            if file.endswith(".md"):
-                try:
-                    with open(os.path.join(path, file), "r", encoding='utf-8') as f:
-                        notes.append({
-                            "title": os.path.splitext(file)[0],
-                            "content": f.read()
-                        })
-                except Exception as e:
-                    logger.error(f"Error reading note file {file}: {e}")
-                    continue
-                    
-        return json.dumps(notes)
-        
-    except Exception as e:
-        logger.error(f"Notes reading error: {e}")
-        return f"Error reading notes: {str(e)}"
-
 # Export
 export = {
     'search_wikipedia': search_wikipedia,
     'fetch_feed': fetch_feed,
     'get_weather': get_weather,
-    'get_news': get_news,
-    'read_notes': read_notes
+    'get_news': get_news
 }

@@ -1,4 +1,3 @@
-import json
 import pyttsx3
 from RealtimeSTT import AudioToTextRecorder
 import asyncio
@@ -8,8 +7,8 @@ import speech_recognition as sr
 
 from utils.execute_response import execute_response
 from utils.query import query_llm
-from utils.index import outputCleaner
 from utils.memory_manager import MemoryManager
+from tools import DYNAMIC_TOOLS
 
 # Initialize text-to-speech
 engine = pyttsx3.init()
@@ -27,13 +26,6 @@ with open("system_prompt.txt", "r") as file:
 # Global variables
 system_ip = None
 input_mode = 1  # Default to text input
-
-# Tools that need AI processing of their results
-DYNAMIC_TOOLS = [
-    "get_weather",
-    "search_wikipedia",
-    "get_news"
-]
 
 # Load configuration
 with open("config.yaml", "r") as file:
