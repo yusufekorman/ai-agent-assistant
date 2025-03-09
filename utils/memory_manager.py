@@ -58,7 +58,7 @@ class MemoryManager:
         if 0 <= index < len(self.texts):
             del self.texts[index]
 
-    def getItems(self, sorted_indices: List[int]) -> List[str]:
+    def getItems(self) -> List[str]:
         """
         Return memory items in the given order
         
@@ -72,7 +72,7 @@ class MemoryManager:
             return []
 
         try:
-            return [self.texts[i] for i in sorted_indices if 0 <= i < len(self.texts)]
+            return self.texts
         except Exception as e:
             logger.error(f"Error retrieving items: {str(e)}")
             return []

@@ -8,6 +8,7 @@ import os
 from functools import lru_cache
 from aiohttp import ClientTimeout
 from utils.logger import get_logger
+import asyncio
 
 logger = get_logger()
 
@@ -264,6 +265,29 @@ async def add_memory(text: str) -> str:
     except Exception as e:
         logger.error(f"Memory add error: {e}")
         return f"Error adding memory: {str(e)}"
+    
+async def python_code(code: str) -> str:
+    """
+    Execute Python code
+    
+    Args:
+        code: Python code to execute
+        
+    Returns:
+        Output of the code
+    """
+    try:
+        # arkaplanda çalıştır
+        virtual_local = {}
+        exec(code, {}, virtual_local)
+
+        if 'result' in virtual_local:
+            return "Python code executed successfully. Result: " + str(virtual_local['result'])
+        else:
+            return "Python code executed successfully. No result returned."
+    except Exception as e:
+        logger.error(f"Python code execution error: {e}")
+        return f"Python code error: {str(e)}"
 
 # Export
 export = {
@@ -271,5 +295,6 @@ export = {
     'fetch_feed': fetch_feed,
     'get_weather': get_weather,
     'get_news': get_news,
-    'add_memory': add_memory
+    'add_memory': add_memory,
+    'python_code': python_code
 }

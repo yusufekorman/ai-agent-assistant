@@ -104,7 +104,16 @@ async def handle_tool_call(tool_call: Any, context: Dict[str, Any], user_input: 
         function_name = tool_call.function.name
         arguments = json.loads(tool_call.function.arguments)
 
-        if function_name == "get_weather":
+        print(f"{function_name}({" ,".join([f"{k}: \"{v}\"" for k, v in arguments.items()])})")
+
+        if function_name == "python_code":
+            if not arguments["code"] or not isinstance(arguments["code"], str):
+                return function_name, "Invalid Python code"
+
+            result = await tool_utils.python_code(arguments["code"])
+            return function_name, result
+
+        elif function_name == "get_weather":
             result = await tool_utils.get_weather(
                 arguments["city"],
                 context["secrets"].get("weather_api_key")
@@ -173,8 +182,6 @@ async def execute_response(
     llm_response: Any,
     user_input: str,
     context: Dict[str, Any],
-    model: Optional[str] = None,
-    config: Dict[str, Any] = {},
     dynamic_tools: Optional[List[str]] = None
 ) -> str:
     """Execute AI response with OpenAI function calling support"""
@@ -189,6 +196,7 @@ async def execute_response(
                 
                 # If this is a dynamic tool, process the result through AI
                 if dynamic_tools and tool_name in dynamic_tools:
+                    print("Processing dynamic tool result")
                     return await process_tool_result(tool_name, result, user_input)
                 
                 return result

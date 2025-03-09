@@ -68,6 +68,7 @@ def say(text):
 async def process_tool_result(tool_name: str, result: str, user_input: str):
     """Process tool result through AI if needed"""
     if tool_name in DYNAMIC_TOOLS:
+        all_texts = memory_manager.getItems()
         ai_response = await query_llm(
             prompt=user_input,
             answer=result,  # Pass the tool result as context
@@ -75,7 +76,8 @@ async def process_tool_result(tool_name: str, result: str, user_input: str):
             config=config,
             model=config.get('llm_model', 'gpt-3.5-turbo'),
             system_prompt=system_prompt,
-            current_tool=tool_name
+            current_tool=tool_name,
+            memory_texts=all_texts
         )
         if ai_response:
             response = await execute_response(
@@ -85,8 +87,6 @@ async def process_tool_result(tool_name: str, result: str, user_input: str):
                     "secrets": secrets,
                     "system_ip": system_ip or "unknown",
                 },
-                model=config.get('llm_model', 'gpt-3.5-turbo'),
-                config=config,
                 dynamic_tools=DYNAMIC_TOOLS
             )
             return response if response else result
@@ -94,7 +94,7 @@ async def process_tool_result(tool_name: str, result: str, user_input: str):
 
 async def handleAI(user_input):
     # Process input and get AI response
-    all_texts = memory_manager.getItems(range(len(memory_manager.texts)))
+    all_texts = memory_manager.getItems()
 
     ai_response = await query_llm(
         prompt=user_input,
@@ -114,8 +114,6 @@ async def handleAI(user_input):
                 "secrets": secrets,
                 "system_ip": system_ip or "unknown",
             },
-            model=config.get('llm_model', 'gpt-3.5-turbo'),
-            config=config,
             dynamic_tools=DYNAMIC_TOOLS  # Pass the dynamic tools list
         )
         if response:

@@ -105,7 +105,24 @@ TOOLS = [
                 "required": ["text"]
             }
         }
-    }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "python_code",
+            "description": "Execute Python code for calculations, data processing and graph plotting",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "description": "The Python code to execute. You must define a variable 'result' to return the output. (Example: result = 2 + 2)"
+                    }
+                },
+                "required": ["code"]
+            }
+        }
+    },
 ]
 
 DYNAMIC_TOOLS = [
