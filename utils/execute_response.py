@@ -155,6 +155,14 @@ async def handle_tool_call(tool_call: Any, context: Dict[str, Any], user_input: 
                 logger.error(f"Browser command error: {e}")
                 return function_name, f"URL opening error: {str(e)}"
 
+        elif function_name == "add_memory":
+            try:
+                result = await tool_utils.add_memory(arguments["text"])
+                return function_name, result
+            except Exception as e:
+                logger.error(f"Memory add error: {e}")
+                return function_name, f"Error adding memory: {str(e)}"
+
         return function_name, f"Unknown tool: {function_name}"
 
     except Exception as e:

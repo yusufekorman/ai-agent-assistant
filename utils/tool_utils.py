@@ -242,10 +242,34 @@ async def get_news(query: str, api_key: Optional[str]) -> str:
         logger.error(f"News API error: {e}")
         return f"Error getting news data: {str(e)}"
 
+async def add_memory(text: str) -> str:
+    """
+    Add a memory vector to the system
+    
+    Args:
+        text: Text to add as memory
+        
+    Returns:
+        Confirmation message
+    """
+    try:
+        from main import memory_manager
+        
+        if not text or not isinstance(text, str):
+            return "Invalid memory text"
+            
+        memory_manager.addItem(text)
+        return f"Memory added successfully: {text[:50]}..."
+        
+    except Exception as e:
+        logger.error(f"Memory add error: {e}")
+        return f"Error adding memory: {str(e)}"
+
 # Export
 export = {
     'search_wikipedia': search_wikipedia,
     'fetch_feed': fetch_feed,
     'get_weather': get_weather,
-    'get_news': get_news
+    'get_news': get_news,
+    'add_memory': add_memory
 }

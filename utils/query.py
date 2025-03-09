@@ -17,9 +17,10 @@ async def query_llm(
     prompt2: Optional[str] = None,
     system_ip: str = "",
     model: str = "gpt-3.5-turbo",
-    memory_vectors: List[str] = [],
+    memory_texts: List[str] = [],
     config: Dict[str, Any] = {},
-    system_prompt: str = ""
+    system_prompt: str = "",
+    current_tool: Optional[str] = None
 ) -> Optional[Dict[str, Any]]:
     """
     Sends a query using OpenAI API with tool/function calling support
@@ -51,7 +52,7 @@ async def query_llm(
         
         # Add context
         _datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        memory_context = "".join([f"<memory>{m}</memory>" for m in memory_vectors])
+        memory_context = "".join([f"<memory>{m}</memory>" for m in memory_texts])
         context = f"My IP address is {system_ip} and the current time is {_datetime}.\n<memories>\n{memory_context}\n</memories>"
         messages.append({"role": "user", "content": context})
             
@@ -67,12 +68,17 @@ async def query_llm(
             base_url=api_url
         )
 
+        prepared_tools = TOOLS
+
+        if current_tool:
+            prepared_tools = [tool for tool in TOOLS if tool["function"]["name"] != current_tool]
+
         # Send query with tools/functions
         response = client.chat.completions.create(
             model=model_name,
             messages=messages,
             temperature=temperature,
-            tools=TOOLS,
+            tools=prepared_tools,
             tool_choice="auto"
         )
 

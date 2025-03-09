@@ -74,7 +74,8 @@ async def process_tool_result(tool_name: str, result: str, user_input: str):
             system_ip=system_ip or "unknown",
             config=config,
             model=config.get('llm_model', 'gpt-3.5-turbo'),
-            system_prompt=system_prompt
+            system_prompt=system_prompt,
+            current_tool=tool_name
         )
         if ai_response:
             response = await execute_response(
@@ -85,19 +86,19 @@ async def process_tool_result(tool_name: str, result: str, user_input: str):
                     "system_ip": system_ip or "unknown",
                 },
                 model=config.get('llm_model', 'gpt-3.5-turbo'),
-                config=config
+                config=config,
+                dynamic_tools=DYNAMIC_TOOLS
             )
             return response if response else result
     return result
 
 async def handleAI(user_input):
     # Process input and get AI response
-    top5_memoryVectors = memory_manager.searchInMemoryVector(user_input)
-    memory_manager.addMemoryVector(user_input)
+    all_texts = memory_manager.getItems(range(len(memory_manager.texts)))
 
     ai_response = await query_llm(
         prompt=user_input,
-        memory_vectors=top5_memoryVectors,
+        memory_texts=all_texts,
         system_ip=system_ip or "unknown",
         config=config,
         model=config.get('llm_model', 'gpt-3.5-turbo'),

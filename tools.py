@@ -88,11 +88,29 @@ TOOLS = [
                 "required": ["url"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "add_memory",
+            "description": "Add a new text to memory",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "description": "The text to add to memory"
+                    }
+                },
+                "required": ["text"]
+            }
+        }
     }
 ]
 
 DYNAMIC_TOOLS = [
     "get_weather",
     "search_wikipedia",
-    "get_news"
+    "get_news",
+    "add_memory"
 ]
